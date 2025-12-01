@@ -3,13 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SQL Master - Hướng Dẫn Thực Hành CSDL (Chi Tiết)</title>
+    <title>SQL Master - Hướng Dẫn Thực Hành CSDL (Interactive)</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Markdown Parser -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- AlaSQL (SQL Engine in JS) -->
+    <script src="https://cdn.jsdelivr.net/npm/alasql@1.7.3/dist/alasql.min.js"></script>
     <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
@@ -55,13 +57,20 @@
         .ai-explanation-box { display: none; margin-top: 12px; padding: 16px; background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; font-size: 0.9rem; color: #166534; line-height: 1.6; }
         .concept-note { font-size: 0.85rem; color: #64748b; line-height: 1.5; margin-bottom: 8px; }
 
+        /* SQL Result Table Style */
+        .sql-result-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .sql-result-table th { background-color: #f1f5f9; text-align: left; padding: 8px; border: 1px solid #e2e8f0; font-weight: 600; color: #475569; }
+        .sql-result-table td { padding: 8px; border: 1px solid #e2e8f0; color: #334155; }
+        .sql-result-table tr:nth-child(even) { background-color: #f8fafc; }
+        .sql-result-table tr:hover { background-color: #f0f9ff; }
+
         /* --- PRINT CSS (TỐI ƯU CHO PDF) --- */
         @media print {
             @page { margin: 1.5cm; size: A4; }
             body { background: white !important; color: black !important; overflow: visible !important; height: auto !important; font-family: 'Inter', sans-serif; }
             
             /* Ẩn các thành phần không cần thiết khi in */
-            #sidebar, .no-print, #ai-fab, #toast, .ai-btn, #chat-modal, #settings-modal, .mobile-header { 
+            #sidebar, .no-print, #ai-fab, #toast, .ai-btn, #chat-modal, #settings-modal, .mobile-header, .tab-buttons-container { 
                 display: none !important; 
             }
 
@@ -75,7 +84,6 @@
             }
 
             /* Bung tất cả các tab và nội dung ẩn */
-            /* Lưu ý: Không bung .no-print */
             .content-section, .tab-content, .ddl-content, .dml-content, .hidden { 
                 display: block !important; 
                 opacity: 1 !important;
@@ -83,10 +91,7 @@
                 height: auto !important;
             }
 
-            /* Đảm bảo phần tử no-print vẫn bị ẩn dù có lệnh bung ở trên */
             .no-print { display: none !important; }
-
-            /* Hiển thị các phần tử dành riêng cho in ấn */
             .print\:block { display: block !important; }
 
             /* Ngắt trang & Bố cục */
@@ -137,6 +142,9 @@
             <button onclick="scrollToSection('triggers')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-md text-sm transition-colors text-slate-600">
                 <span class="material-symbols-outlined text-lg">bolt</span> 1.3 Trigger
             </button>
+            <button onclick="scrollToSection('demo')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-md text-sm transition-colors text-indigo-600 font-bold bg-indigo-50 border-r-4 border-indigo-600">
+                <span class="material-symbols-outlined text-lg">terminal</span> 1.4 SQL Live Demo
+            </button>
             
             <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 mt-6 pl-2">2. Lý thuyết thiết kế</div>
             <button onclick="scrollToSection('keys')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-md text-sm transition-colors text-slate-600">
@@ -173,7 +181,115 @@
             </div>
         </div>
 
-        <!-- 1.1 DDL SECTION -->
+        <!-- 1.4 SQL LIVE DEMO SECTION -->
+        <section id="demo" class="content-section max-w-6xl mx-auto mb-16 animate-fade-in block">
+            <div class="flex items-center gap-3 mb-6 border-b border-slate-200 pb-4">
+                <div class="bg-indigo-600 text-white p-2 rounded-lg shadow-lg shadow-indigo-200"><span class="material-symbols-outlined">terminal</span></div>
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800">1.4 SQL Live Demo (Thực hành)</h2>
+                    <p class="text-slate-500 text-sm">Chạy thử các câu lệnh SQL trực tiếp trên trình duyệt với dữ liệu mẫu.</p>
+                </div>
+            </div>
+
+            <div class="grid lg:grid-cols-3 gap-6 h-[calc(100vh-200px)] min-h-[500px]">
+                
+                <!-- LEFT: Schema Viewer -->
+                <div class="bg-white border border-slate-200 rounded-xl flex flex-col shadow-sm overflow-hidden">
+                    <div class="p-3 bg-slate-50 border-b border-slate-200 font-bold text-slate-700 text-sm flex justify-between items-center">
+                        <span>CSDL: qlysinhvien</span>
+                        <span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Active</span>
+                    </div>
+                    <div class="p-3 space-y-3 overflow-y-auto flex-1 custom-scroll">
+                        <!-- Table Lop -->
+                        <div class="border border-slate-200 rounded-lg overflow-hidden">
+                            <button onclick="insertSampleQuery('SELECT * FROM Lop')" class="w-full text-left p-2 bg-slate-50 hover:bg-indigo-50 text-xs font-bold text-slate-700 border-b border-slate-200 flex justify-between items-center transition">
+                                <span>📂 Lop</span>
+                                <span class="material-symbols-outlined text-base opacity-50">play_arrow</span>
+                            </button>
+                            <div class="p-2 text-[11px] text-slate-600 space-y-1 bg-white">
+                                <div class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-yellow-600">vpn_key</span> MaLop (PK)</div>
+                                <div class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-slate-400">text_fields</span> TenLop</div>
+                            </div>
+                        </div>
+
+                        <!-- Table SinhVien -->
+                        <div class="border border-slate-200 rounded-lg overflow-hidden">
+                            <button onclick="insertSampleQuery('SELECT * FROM SinhVien')" class="w-full text-left p-2 bg-slate-50 hover:bg-indigo-50 text-xs font-bold text-slate-700 border-b border-slate-200 flex justify-between items-center transition">
+                                <span>📂 SinhVien</span>
+                                <span class="material-symbols-outlined text-base opacity-50">play_arrow</span>
+                            </button>
+                            <div class="p-2 text-[11px] text-slate-600 space-y-1 bg-white">
+                                <div class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-yellow-600">vpn_key</span> MaSV (PK)</div>
+                                <div class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-slate-400">text_fields</span> HoTen</div>
+                                <div class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-slate-400">calendar_today</span> NgaySinh</div>
+                                <div class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-slate-400">wc</span> GioiTinh</div>
+                                <div class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-blue-400">key</span> MaLop (FK)</div>
+                            </div>
+                        </div>
+
+                        <!-- Table MonHoc -->
+                        <div class="border border-slate-200 rounded-lg overflow-hidden">
+                            <button onclick="insertSampleQuery('SELECT * FROM MonHoc')" class="w-full text-left p-2 bg-slate-50 hover:bg-indigo-50 text-xs font-bold text-slate-700 border-b border-slate-200 flex justify-between items-center transition">
+                                <span>📂 MonHoc</span>
+                                <span class="material-symbols-outlined text-base opacity-50">play_arrow</span>
+                            </button>
+                            <div class="p-2 text-[11px] text-slate-600 space-y-1 bg-white">
+                                <div class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-yellow-600">vpn_key</span> MaMH (PK)</div>
+                                <div class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-slate-400">text_fields</span> TenMH</div>
+                                <div class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-slate-400">123</span> SoTinChi</div>
+                            </div>
+                        </div>
+
+                        <!-- Table KetQua -->
+                        <div class="border border-slate-200 rounded-lg overflow-hidden">
+                            <button onclick="insertSampleQuery('SELECT * FROM KetQua')" class="w-full text-left p-2 bg-slate-50 hover:bg-indigo-50 text-xs font-bold text-slate-700 border-b border-slate-200 flex justify-between items-center transition">
+                                <span>📂 KetQua</span>
+                                <span class="material-symbols-outlined text-base opacity-50">play_arrow</span>
+                            </button>
+                            <div class="p-2 text-[11px] text-slate-600 space-y-1 bg-white">
+                                <div class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-blue-400">key</span> MaSV (PK, FK)</div>
+                                <div class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-blue-400">key</span> MaMH (PK, FK)</div>
+                                <div class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-slate-400">123</span> Diem</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT: Editor & Result -->
+                <div class="lg:col-span-2 flex flex-col gap-4 h-full">
+                    <!-- Editor -->
+                    <div class="flex-1 bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col overflow-hidden relative group">
+                        <div class="bg-slate-800 text-slate-300 px-4 py-2 text-xs flex justify-between items-center">
+                            <span class="font-mono">SQL Query Editor</span>
+                            <div class="flex gap-2">
+                                <button onclick="insertSampleQuery(`SELECT SV.HoTen, L.TenLop, MH.TenMH, KQ.Diem \nFROM SinhVien SV \nJOIN Lop L ON SV.MaLop = L.MaLop \nJOIN KetQua KQ ON SV.MaSV = KQ.MaSV \nJOIN MonHoc MH ON KQ.MaMH = MH.MaMH \nWHERE KQ.Diem >= 8.0`)" class="hover:text-white transition" title="Mẫu JOIN">JOIN</button>
+                                <button onclick="insertSampleQuery(`SELECT SV.MaLop, COUNT(SV.MaSV) as SoLuongSV \nFROM SinhVien SV \nGROUP BY SV.MaLop`)" class="hover:text-white transition" title="Mẫu Group By">GROUP BY</button>
+                            </div>
+                        </div>
+                        <textarea id="sql-editor" class="flex-1 w-full p-4 bg-[#1e1e1e] text-indigo-100 font-mono text-sm outline-none resize-none leading-relaxed" spellcheck="false">SELECT * FROM SinhVien WHERE GioiTinh = 'Nu'</textarea>
+                        <button onclick="runDemoQuery()" class="absolute bottom-4 right-4 bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded shadow-lg font-bold text-sm flex items-center gap-2 transition transform active:scale-95 z-10">
+                            <span class="material-symbols-outlined text-lg">play_arrow</span> Run Query
+                        </button>
+                    </div>
+
+                    <!-- Result -->
+                    <div class="h-64 bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col overflow-hidden">
+                        <div class="bg-slate-50 border-b border-slate-200 px-4 py-2 text-xs font-bold text-slate-600 flex justify-between">
+                            <span>Kết quả truy vấn</span>
+                            <span id="row-count" class="text-indigo-600">0 dòng</span>
+                        </div>
+                        <div class="overflow-auto flex-1 p-0 custom-scroll relative" id="query-result-container">
+                            <div class="flex flex-col items-center justify-center h-full text-slate-400 text-sm italic">
+                                <span class="material-symbols-outlined text-4xl mb-2 opacity-50">table_chart</span>
+                                Nhấn "Run Query" để xem kết quả
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 1.1 DDL SECTION (Original) -->
         <section id="ddl" class="content-section max-w-5xl mx-auto mb-16 animate-fade-in hidden">
             <div class="flex items-center gap-3 mb-6 border-b border-slate-200 pb-4">
                 <div class="bg-indigo-100 text-indigo-700 p-2 rounded-lg"><span class="material-symbols-outlined">table_view</span></div>
@@ -291,7 +407,7 @@
                     <h4 class="text-sm font-bold text-slate-700 mb-2">Ví dụ tổng hợp:</h4>
                     <div class="code-block p-4 rounded-lg shadow-sm" id="code-constraints">
 <span class="sql-kw">CREATE TABLE</span> NhanVien (
-    MaNV <span class="sql-kw">INT PRIMARY KEY</span>,              
+    MaNV <span class="sql-kw">INT PRIMARY KEY</span>,               
     TenNV <span class="sql-kw">NVARCHAR</span>(50) <span class="sql-kw">NOT NULL</span>,    <span class="sql-com">-- Bắt buộc nhập</span>
     Email <span class="sql-kw">VARCHAR</span>(100) <span class="sql-kw">UNIQUE</span>,      <span class="sql-com">-- Không trùng email</span>
     NgayVaoLam <span class="sql-kw">DATE DEFAULT</span> <span class="sql-fn">GETDATE</span>(), <span class="sql-com">-- Mặc định là hôm nay</span>
@@ -356,7 +472,7 @@
                 <div><h2 class="text-2xl font-bold text-slate-800">1.2 Thao tác Dữ liệu (DML)</h2></div>
             </div>
 
-            <!-- AI TEXT TO SQL (RESTORED) -->
+            <!-- AI TEXT TO SQL -->
             <div class="bg-white p-6 rounded-xl border border-indigo-100 shadow-lg mb-8 no-print ring-1 ring-indigo-50">
                 <div class="flex items-center gap-2 mb-3">
                     <span class="material-symbols-outlined text-indigo-600 text-2xl">auto_awesome</span>
@@ -532,7 +648,7 @@
                 </div>
                 <!-- Code -->
                 <div class="lg:col-span-2 space-y-4">
-                     <div class="code-block p-4 rounded-lg text-sm overflow-auto" id="code-trig">
+                      <div class="code-block p-4 rounded-lg text-sm overflow-auto" id="code-trig">
 <span class="sql-kw">CREATE TRIGGER</span> trg_CheckDiem <span class="sql-kw">ON</span> KetQua
 <span class="sql-kw">FOR INSERT, UPDATE</span>
 <span class="sql-kw">AS</span>
@@ -544,8 +660,8 @@
     <span class="sql-kw">ROLLBACK TRANSACTION</span>; <span class="sql-com">-- Hủy bỏ thao tác</span>
   <span class="sql-kw">END</span>
 <span class="sql-kw">END</span>
-                     </div>
-                     <button onclick="explainCode('code-trig', 'expl-trig', 'Giải thích bảng inserted là gì và tại sao phải dùng Rollback.')" class="ai-btn text-xs bg-indigo-600 text-white px-4 py-2 rounded shadow-sm hover:bg-indigo-700 transition no-print flex items-center gap-2 w-fit">
+                      </div>
+                      <button onclick="explainCode('code-trig', 'expl-trig', 'Giải thích bảng inserted là gì và tại sao phải dùng Rollback.')" class="ai-btn text-xs bg-indigo-600 text-white px-4 py-2 rounded shadow-sm hover:bg-indigo-700 transition no-print flex items-center gap-2 w-fit">
                         <span class="material-symbols-outlined text-sm">smart_toy</span> AI: Giải thích Trigger
                     </button>
                     <div id="expl-trig" class="ai-explanation-box"></div>
@@ -646,7 +762,7 @@ C, D -> E</textarea>
              </div>
         </section>
         
-        <!-- 2.3 DECOMPOSITION (UPDATED) -->
+        <!-- 2.3 DECOMPOSITION -->
         <section id="decomposition" class="content-section max-w-5xl mx-auto mb-16 animate-fade-in hidden">
              <div class="flex items-center gap-3 mb-6 border-b border-slate-200 pb-4">
                 <div class="bg-indigo-100 text-indigo-700 p-2 rounded-lg"><span class="material-symbols-outlined">call_split</span></div>
@@ -752,6 +868,18 @@ C, D -> E</textarea>
         function scrollToSection(id) {
             document.querySelectorAll('.content-section').forEach(sec => sec.classList.add('hidden'));
             document.getElementById(id).classList.remove('hidden');
+            document.getElementById(id).classList.add('block');
+            
+            // Highlight sidebar
+            document.querySelectorAll('#sidebar .nav-item').forEach(btn => {
+               btn.classList.remove('bg-indigo-50', 'text-indigo-600', 'border-r-4', 'border-indigo-600', 'font-bold');
+               btn.classList.add('text-slate-600');
+               if(btn.onclick.toString().includes(id)) {
+                   btn.classList.add('bg-indigo-50', 'text-indigo-600', 'border-r-4', 'border-indigo-600', 'font-bold');
+                   btn.classList.remove('text-slate-600');
+               }
+            });
+
             if(window.innerWidth < 768) document.getElementById('sidebar').classList.add('hidden');
         }
 
@@ -868,7 +996,87 @@ C, D -> E</textarea>
             out.innerHTML = marked.parse(res);
         }
 
-        document.addEventListener('DOMContentLoaded', () => scrollToSection('ddl'));
+        // --- SQL DEMO ENGINE (AlaSQL) ---
+        function initSQLDemo() {
+            // Create Database & Tables
+            alasql("CREATE DATABASE IF NOT EXISTS qlysinhvien");
+            alasql("USE qlysinhvien");
+
+            alasql("CREATE TABLE Lop (MaLop STRING, TenLop STRING)");
+            alasql("CREATE TABLE SinhVien (MaSV STRING, HoTen STRING, NgaySinh DATE, GioiTinh STRING, MaLop STRING)");
+            alasql("CREATE TABLE MonHoc (MaMH STRING, TenMH STRING, SoTinChi INT)");
+            alasql("CREATE TABLE KetQua (MaSV STRING, MaMH STRING, Diem FLOAT)");
+
+            // Seed Data
+            alasql("INSERT INTO Lop VALUES ('L01', 'CNTT K15'), ('L02', 'Kinh Te K15'), ('L03', 'Ngon Ngu Anh')");
+            
+            alasql("INSERT INTO SinhVien VALUES ('SV01', 'Nguyen Van An', '2003-01-01', 'Nam', 'L01')");
+            alasql("INSERT INTO SinhVien VALUES ('SV02', 'Tran Thi Binh', '2003-05-12', 'Nu', 'L01')");
+            alasql("INSERT INTO SinhVien VALUES ('SV03', 'Le Van Cuong', '2002-11-20', 'Nam', 'L02')");
+            alasql("INSERT INTO SinhVien VALUES ('SV04', 'Pham My Duyen', '2003-08-15', 'Nu', 'L02')");
+            alasql("INSERT INTO SinhVien VALUES ('SV05', 'Hoang Van Em', '2003-02-10', 'Nam', 'L01')");
+
+            alasql("INSERT INTO MonHoc VALUES ('MH01', 'Co so du lieu', 3), ('MH02', 'Lap trinh Java', 4), ('MH03', 'Toan roi rac', 3)");
+
+            alasql("INSERT INTO KetQua VALUES ('SV01', 'MH01', 8.5), ('SV01', 'MH02', 9.0)");
+            alasql("INSERT INTO KetQua VALUES ('SV02', 'MH01', 7.0), ('SV02', 'MH03', 8.0)");
+            alasql("INSERT INTO KetQua VALUES ('SV03', 'MH02', 5.5)");
+            alasql("INSERT INTO KetQua VALUES ('SV04', 'MH01', 9.5), ('SV04', 'MH03', 9.0)");
+            alasql("INSERT INTO KetQua VALUES ('SV05', 'MH01', 4.0), ('SV05', 'MH02', 5.0)");
+        }
+
+        function runDemoQuery() {
+            const query = document.getElementById('sql-editor').value;
+            const resContainer = document.getElementById('query-result-container');
+            const rowCount = document.getElementById('row-count');
+            
+            try {
+                const res = alasql(query);
+                
+                // Handle empty result or non-array result
+                if (!res || !Array.isArray(res)) {
+                    resContainer.innerHTML = '<div class="p-4 text-green-600 font-mono text-sm">Query executed successfully (No Rows Returned).</div>';
+                    rowCount.innerText = "0 dòng";
+                    return;
+                }
+
+                if (res.length === 0) {
+                     resContainer.innerHTML = '<div class="p-4 text-slate-500 font-mono text-sm italic">Không tìm thấy dữ liệu phù hợp.</div>';
+                     rowCount.innerText = "0 dòng";
+                     return;
+                }
+
+                // Render Table
+                const cols = Object.keys(res[0]);
+                let html = '<table class="sql-result-table"><thead><tr>';
+                cols.forEach(c => html += `<th>${c}</th>`);
+                html += '</tr></thead><tbody>';
+                
+                res.forEach(row => {
+                    html += '<tr>';
+                    cols.forEach(c => html += `<td>${row[c]}</td>`);
+                    html += '</tr>';
+                });
+                html += '</tbody></table>';
+                
+                resContainer.innerHTML = html;
+                rowCount.innerText = `${res.length} dòng`;
+
+            } catch (e) {
+                resContainer.innerHTML = `<div class="p-4 text-red-600 font-mono text-sm"><strong>Lỗi cú pháp:</strong><br>${e.message}</div>`;
+                rowCount.innerText = "Lỗi";
+            }
+        }
+
+        function insertSampleQuery(q) {
+            document.getElementById('sql-editor').value = q;
+            runDemoQuery();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            scrollToSection('ddl');
+            initSQLDemo();
+        });
     </script>
 </body>
 </html>
