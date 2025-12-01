@@ -59,20 +59,21 @@
 
         /* SQL Result Table Style */
         .sql-result-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-        .sql-result-table th { background-color: #f1f5f9; text-align: left; padding: 8px; border: 1px solid #e2e8f0; font-weight: 600; color: #475569; position: sticky; top: 0; }
+        .sql-result-table th { background-color: #f1f5f9; text-align: left; padding: 8px; border: 1px solid #e2e8f0; font-weight: 600; color: #475569; position: sticky; top: 0; white-space: nowrap; }
         .sql-result-table td { padding: 8px; border: 1px solid #e2e8f0; color: #334155; }
         .sql-result-table tr:nth-child(even) { background-color: #f8fafc; }
         .sql-result-table tr:hover { background-color: #f0f9ff; }
 
         /* NEW FEATURES CSS */
-        .exercise-card { transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; }
-        .exercise-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
-        .exercise-card.completed { border-color: #86efac; background-color: #f0fdf4; }
+        .exercise-card { transition: all 0.2s; cursor: pointer; border-left: 4px solid transparent; }
+        .exercise-card:hover { transform: translateX(4px); background-color: #f8fafc; }
+        .exercise-card.active { border-left-color: #4f46e5; background-color: #eff6ff; }
+        .exercise-card.completed .status-icon { color: #10b981; }
         .badge-icon { background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         
         /* ERD Specific Styles */
         #erd-canvas { position: relative; }
-        .erd-table { position: absolute; z-index: 10; width: 200px; background: white; border: 1px solid #cbd5e1; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); transition: transform 0.2s; }
+        .erd-table { position: absolute; z-index: 10; width: 180px; background: white; border: 1px solid #cbd5e1; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); transition: transform 0.2s; }
         .erd-table:hover { transform: scale(1.05); z-index: 20; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
         #erd-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
 
@@ -137,17 +138,17 @@
                 <span class="material-symbols-outlined filled">database</span> SQL Master
             </h1>
             <!-- NEW FEATURES START: Gamification Header -->
-            <div id="user-profile-mini" class="flex items-center gap-3 bg-white p-2 rounded-lg border border-slate-200 shadow-sm mt-2">
+            <div id="user-profile-mini" class="flex items-center gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm mt-2">
                 <div class="bg-indigo-100 p-2 rounded-full text-indigo-600">
-                    <span class="material-symbols-outlined text-lg">emoji_events</span>
+                    <span class="material-symbols-outlined text-xl">emoji_events</span>
                 </div>
                 <div class="flex-1">
-                    <div class="flex justify-between text-xs font-bold text-slate-700">
+                    <div class="flex justify-between text-xs font-bold text-slate-700 mb-1">
                         <span>Level <span id="user-lvl">1</span></span>
                         <span class="text-indigo-600"><span id="user-xp">0</span> XP</span>
                     </div>
-                    <div class="w-full bg-slate-100 rounded-full h-1.5 mt-1">
-                        <div id="xp-bar" class="bg-indigo-500 h-1.5 rounded-full" style="width: 0%"></div>
+                    <div class="w-full bg-slate-100 rounded-full h-1.5">
+                        <div id="xp-bar" class="bg-indigo-500 h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
                     </div>
                 </div>
             </div>
@@ -219,7 +220,7 @@
                 <div class="bg-indigo-600 text-white p-2 rounded-lg shadow-lg shadow-indigo-200"><span class="material-symbols-outlined">terminal</span></div>
                 <div>
                     <h2 class="text-2xl font-bold text-slate-800">1.4 SQL Live Demo (Thực hành)</h2>
-                    <p class="text-slate-500 text-sm">Chạy thử các câu lệnh SQL trực tiếp trên trình duyệt.</p>
+                    <p class="text-slate-500 text-sm">Sandbox thực hành SQL với các bộ dữ liệu mẫu.</p>
                 </div>
             </div>
 
@@ -230,7 +231,8 @@
                     <!-- DB Control Header -->
                     <div class="p-3 bg-slate-50 border-b border-slate-200 text-sm flex flex-col gap-2">
                         <!-- NEW FEATURES START: Dataset Selector -->
-                        <div class="flex justify-between items-center bg-white border border-slate-200 rounded px-2 py-1">
+                        <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Cơ sở dữ liệu:</label>
+                        <div class="flex justify-between items-center bg-white border border-slate-200 rounded px-2 py-1.5 shadow-sm">
                             <div class="flex items-center gap-2 flex-1 min-w-0">
                                 <span class="material-symbols-outlined text-indigo-600 text-sm shrink-0">database</span>
                                 <select id="db-selector" onchange="switchDB(this.value)" class="bg-transparent font-bold text-indigo-900 text-xs outline-none cursor-pointer w-full truncate" title="Chuyển đổi CSDL">
@@ -238,17 +240,19 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="flex gap-1">
-                            <select id="sample-dataset-selector" onchange="loadSampleDataset(this.value)" class="flex-1 bg-white border border-slate-300 rounded text-[10px] font-bold text-slate-600 py-1.5 px-1 hover:border-indigo-300 outline-none">
-                                <option value="" disabled selected>+ Mẫu Dữ Liệu</option>
-                                <option value="school">Trường Học (QlySV)</option>
-                                <option value="ecommerce">TMĐT (Ecom)</option>
-                                <option value="hr">Nhân Sự (HR)</option>
+                        <div class="grid grid-cols-2 gap-2 mt-1">
+                            <select id="sample-dataset-selector" onchange="loadSampleDataset(this.value)" class="col-span-2 bg-white border border-slate-300 rounded text-[11px] font-bold text-slate-600 py-1.5 px-2 hover:border-indigo-300 outline-none">
+                                <option value="" disabled selected>+ Tải Dữ Liệu Mẫu</option>
+                                <option value="school">🏫 Trường Học (Basic)</option>
+                                <option value="ecommerce">🛒 TMĐT (Intermediate)</option>
+                                <option value="hr">👥 Nhân Sự (Advanced)</option>
                             </select>
-                            <button onclick="createNewDB()" class="bg-white border border-slate-300 rounded px-2 text-slate-600 hover:text-indigo-700" title="Tạo Mới"><span class="material-symbols-outlined text-[14px]">add</span></button>
-                            <button onclick="triggerImport()" class="bg-white border border-slate-300 rounded px-2 text-slate-600 hover:text-indigo-700" title="Import SQL/CSV"><span class="material-symbols-outlined text-[14px]">upload</span></button>
-                            <button onclick="exportDB()" class="bg-white border border-slate-300 rounded px-2 text-slate-600 hover:text-indigo-700" title="Export SQL"><span class="material-symbols-outlined text-[14px]">download</span></button>
-                            <input type="file" id="import-file" class="hidden" accept=".sql,.csv" onchange="handleFileImport(this)">
+                            <button onclick="createNewDB()" class="bg-white border border-slate-300 rounded px-2 py-1.5 text-slate-600 hover:text-indigo-700 hover:bg-slate-50 text-[11px] font-medium flex items-center justify-center gap-1" title="Tạo Mới"><span class="material-symbols-outlined text-[14px]">add</span> Tạo Mới</button>
+                            <button onclick="exportDB()" class="bg-white border border-slate-300 rounded px-2 py-1.5 text-slate-600 hover:text-indigo-700 hover:bg-slate-50 text-[11px] font-medium flex items-center justify-center gap-1" title="Xuất SQL"><span class="material-symbols-outlined text-[14px]">download</span> Export</button>
+                        </div>
+                        <div class="flex gap-2">
+                             <button onclick="triggerImport()" class="flex-1 bg-white border border-slate-300 rounded px-2 py-1.5 text-slate-600 hover:text-indigo-700 hover:bg-slate-50 text-[11px] font-medium flex items-center justify-center gap-1" title="Nhập file SQL/CSV"><span class="material-symbols-outlined text-[14px]">upload</span> Import</button>
+                             <input type="file" id="import-file" class="hidden" accept=".sql,.csv" onchange="handleFileImport(this)">
                         </div>
                         <!-- NEW FEATURES END -->
                     </div>
@@ -259,7 +263,7 @@
                     </div>
                     
                     <!-- NEW FEATURES START: Mini Visualizer Button -->
-                    <button onclick="toggleVisualizer()" class="p-2 bg-indigo-50 text-indigo-700 text-xs font-bold border-t border-indigo-100 hover:bg-indigo-100 flex items-center justify-center gap-1">
+                    <button onclick="toggleVisualizer()" class="p-3 bg-indigo-50 text-indigo-700 text-xs font-bold border-t border-indigo-100 hover:bg-indigo-100 flex items-center justify-center gap-2 transition-colors">
                         <span class="material-symbols-outlined text-sm">hub</span> Xem Sơ đồ Quan hệ (ERD)
                     </button>
                     <!-- NEW FEATURES END -->
@@ -269,16 +273,16 @@
                 <div class="lg:col-span-2 flex flex-col gap-4 h-full relative">
                     
                     <!-- Visualizer Overlay (NEW) -->
-                    <div id="erd-visualizer" class="hidden absolute inset-0 bg-white/95 z-20 backdrop-blur-sm rounded-xl border border-slate-200 p-6 overflow-auto animate-fade-in flex flex-col">
-                        <div class="flex justify-between items-center mb-4">
+                    <div id="erd-visualizer" class="hidden absolute inset-0 bg-white/95 z-20 backdrop-blur-sm rounded-xl border border-slate-200 p-6 overflow-auto animate-fade-in flex flex-col shadow-2xl">
+                        <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-2">
                             <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2"><span class="material-symbols-outlined">hub</span> Sơ đồ Quan hệ (ERD)</h3>
-                            <button onclick="toggleVisualizer()" class="p-1 hover:bg-slate-100 rounded"><span class="material-symbols-outlined">close</span></button>
-                        </div>
-                        <div id="erd-canvas" class="flex-1 border border-slate-200 rounded bg-slate-50 relative p-4 overflow-hidden flex items-center justify-center cursor-move">
-                            <div class="absolute text-slate-400 text-xs bottom-2 left-2 z-0 italic pointer-events-none">
-                                <span class="inline-block w-2 h-2 bg-yellow-400 rounded-full mr-1"></span> PK (Khóa Chính)
-                                <span class="inline-block w-2 h-2 bg-blue-400 rounded-full mr-1 ml-2"></span> FK (Khóa Ngoại)
+                            <div class="flex gap-2">
+                                <span class="text-xs flex items-center gap-1 px-2 py-1 bg-yellow-100 rounded-full text-yellow-800"><span class="w-2 h-2 bg-yellow-500 rounded-full"></span> PK (Primary Key)</span>
+                                <span class="text-xs flex items-center gap-1 px-2 py-1 bg-blue-100 rounded-full text-blue-800"><span class="w-2 h-2 bg-blue-500 rounded-full"></span> FK (Foreign Key)</span>
+                                <button onclick="toggleVisualizer()" class="p-1 hover:bg-slate-200 rounded ml-2"><span class="material-symbols-outlined">close</span></button>
                             </div>
+                        </div>
+                        <div id="erd-canvas" class="flex-1 border border-slate-200 rounded bg-slate-50 relative p-4 overflow-hidden flex items-center justify-center cursor-move shadow-inner">
                             <svg id="erd-svg" width="100%" height="100%" class="absolute top-0 left-0 w-full h-full pointer-events-none z-0"></svg>
                             <!-- Tables will be drawn here -->
                         </div>
@@ -289,7 +293,7 @@
                         <div class="absolute top-0 right-0 w-16 h-16 bg-indigo-100 rounded-bl-full -mr-8 -mt-8 z-0 opacity-50"></div>
                         <div class="flex items-center gap-2 z-10">
                             <span class="material-symbols-outlined text-indigo-600">auto_awesome</span>
-                            <h3 class="font-bold text-indigo-900 text-sm">AI Trợ Lý Demo (Thông minh)</h3>
+                            <h3 class="font-bold text-indigo-900 text-sm">AI Trợ Lý Demo</h3>
                         </div>
                         <div class="flex gap-2 z-10">
                             <input type="text" id="demo-ai-input" class="flex-1 border border-indigo-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-200 outline-none shadow-sm" placeholder="VD: Liệt kê sinh viên có điểm trên 8.0..." onkeydown="if(event.key === 'Enter') generateDemoSQL()">
@@ -322,7 +326,7 @@
                         
                         <!-- NEW FEATURES START: Share Button -->
                         <div class="absolute bottom-4 left-4 flex gap-2 z-10">
-                             <button onclick="shareQuery()" class="bg-slate-700/50 hover:bg-slate-700 text-white p-2 rounded text-xs backdrop-blur-sm transition" title="Chia sẻ Query"><span class="material-symbols-outlined text-sm">share</span></button>
+                             <button onclick="shareQuery()" class="bg-slate-700/50 hover:bg-slate-700 text-white p-2 rounded text-xs backdrop-blur-sm transition flex items-center gap-1" title="Chia sẻ Query"><span class="material-symbols-outlined text-sm">share</span> Share</button>
                         </div>
                         <!-- NEW FEATURES END -->
 
@@ -335,12 +339,13 @@
                     <div class="h-64 bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col overflow-hidden">
                         <div class="bg-slate-50 border-b border-slate-200 px-4 py-2 text-xs font-bold text-slate-600 flex justify-between items-center">
                             <span>Kết quả truy vấn</span>
-                            <div class="flex gap-2">
+                            <div class="flex gap-2 items-center">
                                 <!-- NEW FEATURES START: Export Data Buttons -->
-                                <button onclick="exportData('csv')" class="text-indigo-600 hover:underline">CSV</button>
-                                <button onclick="exportData('json')" class="text-indigo-600 hover:underline">JSON</button>
+                                <span class="text-slate-400 font-normal mr-1">Lưu:</span>
+                                <button onclick="exportData('csv')" class="text-indigo-600 hover:underline bg-white border border-indigo-200 px-2 rounded hover:bg-indigo-50">CSV</button>
+                                <button onclick="exportData('json')" class="text-indigo-600 hover:underline bg-white border border-indigo-200 px-2 rounded hover:bg-indigo-50">JSON</button>
                                 <!-- NEW FEATURES END -->
-                                <span class="text-slate-300">|</span>
+                                <span class="text-slate-300 mx-1">|</span>
                                 <span id="row-count" class="text-indigo-600">0 dòng</span>
                             </div>
                         </div>
@@ -367,9 +372,9 @@
 
             <div class="grid lg:grid-cols-4 gap-6">
                 <!-- Topic/Level Sidebar -->
-                <div class="bg-white border border-slate-200 rounded-xl overflow-hidden h-[calc(100vh-250px)] flex flex-col">
+                <div class="bg-white border border-slate-200 rounded-xl overflow-hidden h-[calc(100vh-250px)] flex flex-col shadow-sm">
                     <div class="p-3 bg-slate-50 font-bold text-slate-700 text-sm border-b border-slate-200">Danh sách bài tập</div>
-                    <div class="p-2 overflow-y-auto flex-1 custom-scroll" id="exercise-list">
+                    <div class="p-2 overflow-y-auto flex-1 custom-scroll space-y-2 bg-slate-50/50" id="exercise-list">
                         <!-- Populated via JS -->
                     </div>
                 </div>
@@ -378,14 +383,17 @@
                 <div class="lg:col-span-3 flex flex-col gap-4">
                     <div id="exercise-workspace" class="hidden h-full flex flex-col gap-4">
                         <!-- Problem Description -->
-                        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm relative">
                             <div class="flex justify-between items-start mb-2">
                                 <h3 id="ex-title" class="text-xl font-bold text-slate-800">Tiêu đề bài tập</h3>
                                 <span id="ex-difficulty" class="px-2 py-1 rounded text-xs font-bold uppercase bg-green-100 text-green-700">Easy</span>
                             </div>
                             <p id="ex-desc" class="text-slate-600 text-sm leading-relaxed mb-4">Mô tả yêu cầu...</p>
-                            <div class="text-xs text-slate-500 font-mono bg-slate-50 p-2 rounded border border-slate-100">
-                                <strong>Gợi ý bảng:</strong> <span id="ex-tables">SinhVien, Lop</span>
+                            <div class="flex justify-between items-center mt-4">
+                                <div class="text-xs text-slate-500 font-mono bg-slate-50 p-2 rounded border border-slate-100 inline-block">
+                                    <strong>Gợi ý bảng:</strong> <span id="ex-tables">SinhVien, Lop</span>
+                                </div>
+                                <button onclick="showExerciseAnswer()" class="text-xs text-indigo-600 hover:underline">Xem đáp án</button>
                             </div>
                         </div>
 
@@ -395,9 +403,9 @@
                                 <span>Lời giải của bạn</span>
                             </div>
                             <textarea id="ex-editor" class="flex-1 w-full p-4 bg-[#1e1e1e] text-indigo-100 font-mono text-sm outline-none resize-none" rows="6"></textarea>
-                            <div class="bg-slate-50 p-2 flex justify-between items-center border-t border-slate-200">
-                                <div id="ex-feedback" class="text-sm font-bold px-2"></div>
-                                <button onclick="checkExercise()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded font-bold text-sm shadow flex items-center gap-2">
+                            <div class="bg-slate-50 p-3 flex justify-between items-center border-t border-slate-200">
+                                <div id="ex-feedback" class="text-sm font-bold px-2 flex-1"></div>
+                                <button onclick="checkExercise()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-bold text-sm shadow flex items-center gap-2 transition transform active:scale-95">
                                     <span class="material-symbols-outlined text-lg">check_circle</span> Chấm Bài
                                 </button>
                             </div>
@@ -406,7 +414,9 @@
                         <!-- Result Preview -->
                         <div class="h-48 bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col overflow-hidden">
                             <div class="bg-slate-50 px-4 py-2 text-xs font-bold text-slate-600 border-b border-slate-200">Kết quả chạy thử</div>
-                            <div id="ex-result" class="overflow-auto p-0 custom-scroll h-full"></div>
+                            <div id="ex-result" class="overflow-auto p-0 custom-scroll h-full">
+                                <div class="flex items-center justify-center h-full text-slate-400 text-xs italic">Kết quả sẽ hiện ở đây</div>
+                            </div>
                         </div>
                     </div>
                     
@@ -419,7 +429,7 @@
         </section>
 
         <!-- NEW FEATURES START: 3.2 Theory Section -->
-        <section id="theory-section" class="content-section max-w-4xl mx-auto mb-16 animate-fade-in hidden">
+        <section id="theory-section" class="content-section max-w-5xl mx-auto mb-16 animate-fade-in hidden">
             <div class="flex items-center gap-3 mb-6 border-b border-slate-200 pb-4">
                 <div class="bg-indigo-600 text-white p-2 rounded-lg shadow-lg"><span class="material-symbols-outlined">menu_book</span></div>
                 <div>
@@ -428,7 +438,7 @@
                 </div>
             </div>
             
-            <div class="space-y-6" id="theory-content">
+            <div class="grid md:grid-cols-2 gap-6" id="theory-content">
                 <!-- Populated via JS -->
             </div>
         </section>
@@ -1018,7 +1028,8 @@ C, D -> E</textarea>
 
         const DATASETS = {
             school: {
-                name: 'Trường Học (QlySV)',
+                name: 'school_db',
+                display: 'Trường Học',
                 initSQL: [
                     "CREATE TABLE IF NOT EXISTS Lop (MaLop STRING, TenLop STRING)",
                     "CREATE TABLE IF NOT EXISTS SinhVien (MaSV STRING, HoTen STRING, NgaySinh DATE, GioiTinh STRING, MaLop STRING)",
@@ -1027,7 +1038,8 @@ C, D -> E</textarea>
                 ]
             },
             ecommerce: {
-                name: 'TMĐT (Ecom)',
+                name: 'ecommerce_db',
+                display: 'Thương Mại ĐT',
                 initSQL: [
                     "CREATE TABLE IF NOT EXISTS Users (ID INT, Name STRING, Country STRING)",
                     "CREATE TABLE IF NOT EXISTS Orders (OrderID INT, UserID INT, Amount FLOAT, OrderDate DATE)",
@@ -1036,7 +1048,8 @@ C, D -> E</textarea>
                 ]
             },
             hr: {
-                name: 'Nhân Sự (HR)',
+                name: 'hr_db',
+                display: 'Nhân Sự',
                 initSQL: [
                     "CREATE TABLE IF NOT EXISTS Employees (EmpID INT, Name STRING, DeptID INT, Salary INT)",
                     "CREATE TABLE IF NOT EXISTS Departments (DeptID INT, DeptName STRING)",
@@ -1169,6 +1182,12 @@ C, D -> E</textarea>
         async function callGemini(prompt, sys) {
             const key = localStorage.getItem('gemini_api_key');
             if(!key) { openSettings(); return "Vui lòng nhập API Key."; }
+            
+            // Check cache
+            const cacheKey = 'ai_cache_' + btoa(prompt).slice(0, 50);
+            const cached = localStorage.getItem(cacheKey);
+            if(cached) return cached;
+
             try {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${key}`, {
                     method: 'POST',
@@ -1176,7 +1195,9 @@ C, D -> E</textarea>
                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], systemInstruction: { parts: [{ text: sys }] } })
                 });
                 const data = await res.json();
-                return data.candidates?.[0]?.content?.parts?.[0]?.text || "Lỗi phản hồi từ AI.";
+                const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "Lỗi phản hồi từ AI.";
+                localStorage.setItem(cacheKey, text); // Save to cache
+                return text;
             } catch(e) { return "Lỗi: " + e.message; }
         }
 
@@ -1271,11 +1292,6 @@ Return ONLY the SQL code block. No explanation.
 
         // --- SQL DEMO ENGINE (AlaSQL) ---
         function initSQLDemo() {
-            // Check if databases exist, if not create default
-            // AlaSQL is in-memory mostly unless persistence plugin used (not here)
-            // But we can simulate persistence by checking if our tables exist
-            
-            // Default DB
             alasql("CREATE DATABASE IF NOT EXISTS qlysinhvien");
             alasql("USE qlysinhvien");
             
@@ -1375,6 +1391,8 @@ Return ONLY the SQL code block. No explanation.
                         alert("Tên CSDL chỉ được chứa chữ cái, số và dấu gạch dưới.");
                         return;
                     }
+                    // Fix: DROP then CREATE to prevent error
+                    alasql(`DROP DATABASE IF EXISTS ${name}`);
                     alasql(`CREATE DATABASE ${name}`);
                     alasql(`USE ${name}`);
                     refreshSchemaViewer();
@@ -1414,14 +1432,11 @@ Return ONLY the SQL code block. No explanation.
                     } else if(file.name.endsWith('.csv')) {
                         const tableName = prompt("Nhập tên bảng để lưu dữ liệu CSV:", "ImportTable");
                         if(tableName) {
-                            // Simple CSV parsing assuming header row
                             const rows = content.split('\n').filter(r=>r.trim());
                             if(rows.length > 0) {
                                 const headers = rows[0].split(',');
-                                // Create table dynamically
                                 const createSql = `CREATE TABLE ${tableName} (${headers.map(h=>h.trim() + ' STRING').join(', ')})`;
                                 alasql(createSql);
-                                // Insert data
                                 for(let i=1; i<rows.length; i++) {
                                     const vals = rows[i].split(',').map(v=>`'${v.trim()}'`).join(',');
                                     alasql(`INSERT INTO ${tableName} VALUES (${vals})`);
@@ -1487,7 +1502,6 @@ Return ONLY the SQL code block. No explanation.
                     refreshSchemaViewer();
                 }
 
-                // Handling multiple statements
                 let dataToRender = res;
                 if (Array.isArray(res) && res.length > 0 && Array.isArray(res[0])) {
                     dataToRender = res[res.length - 1]; 
@@ -1505,7 +1519,6 @@ Return ONLY the SQL code block. No explanation.
                      return;
                 }
 
-                // Render Table
                 const cols = Object.keys(dataToRender[0]);
                 let html = '<table class="sql-result-table"><thead><tr>';
                 cols.forEach(c => html += `<th>${c}</th>`);
@@ -1539,25 +1552,22 @@ Return ONLY the SQL code block. No explanation.
             const ds = DATASETS[key];
             if(!ds) return;
             
-            const dbName = key + '_db';
+            const dbName = ds.name;
             try {
-                // Fix for "Database already exists" error
-                // Instead of CREATE IF NOT EXISTS, we DROP and RECREATE to ensure clean state for exercises
-                
-                // 1. Switch to a temp DB or default to avoid locking the one we drop (if needed, though AlaSQL is permissive)
-                // We'll just try to drop.
+                // IMPORTANT FIX: DROP DB if exists to avoid collision, then RECREATE
                 alasql(`DROP DATABASE IF EXISTS ${dbName}`);
                 alasql(`CREATE DATABASE ${dbName}`);
                 alasql(`USE ${dbName}`);
                 
-                // 2. Initialize Data
+                // Initialize Data
                 ds.initSQL.forEach(q => alasql(q));
                 
                 refreshSchemaViewer();
-                showToast(`Đã tải bộ dữ liệu: ${ds.name}`);
+                showToast(`Đã tải bộ dữ liệu: ${ds.display}`);
                 
                 // Switch select to this DB
                 document.getElementById('db-selector').value = dbName;
+                document.getElementById('sample-dataset-selector').value = ""; // Reset selector
             } catch(e) {
                 console.error(e);
                 alert("Lỗi tải dataset: " + e.message);
@@ -1572,14 +1582,14 @@ Return ONLY the SQL code block. No explanation.
             EXERCISES.forEach((ex, idx) => {
                 const isCompleted = USER_STATE.completedExercises.includes(ex.id);
                 const el = document.createElement('div');
-                el.className = `p-3 m-1 rounded border border-slate-100 exercise-card ${isCompleted ? 'completed' : 'bg-white'}`;
+                el.className = `p-3 m-1 rounded border border-slate-200 exercise-card ${isCompleted ? 'completed bg-green-50 border-green-200' : 'bg-white'}`;
                 el.onclick = () => loadExercise(idx);
                 el.innerHTML = `
                     <div class="flex justify-between items-center mb-1">
-                        <span class="text-xs font-bold text-slate-500 uppercase">${ex.level}</span>
-                        ${isCompleted ? '<span class="material-symbols-outlined text-green-500 text-sm">check_circle</span>' : ''}
+                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wide px-1.5 py-0.5 bg-slate-100 rounded">${ex.level}</span>
+                        ${isCompleted ? '<span class="material-symbols-outlined text-green-500 text-sm status-icon">check_circle</span>' : '<span class="material-symbols-outlined text-slate-300 text-sm">radio_button_unchecked</span>'}
                     </div>
-                    <div class="font-bold text-sm text-slate-700">${ex.title}</div>
+                    <div class="font-bold text-sm text-slate-700 leading-tight">${ex.title}</div>
                 `;
                 listEl.appendChild(el);
             });
@@ -1591,6 +1601,12 @@ Return ONLY the SQL code block. No explanation.
             currentExerciseIdx = idx;
             const ex = EXERCISES[idx];
             
+            // Highlight active
+            document.querySelectorAll('.exercise-card').forEach((el, i) => {
+                if (i === idx) el.classList.add('active', 'border-l-4', 'border-indigo-500');
+                else el.classList.remove('active', 'border-l-4', 'border-indigo-500');
+            });
+
             document.getElementById('exercise-workspace').classList.remove('hidden');
             document.getElementById('exercise-empty-state').classList.add('hidden');
             
@@ -1598,11 +1614,19 @@ Return ONLY the SQL code block. No explanation.
             document.getElementById('ex-difficulty').innerText = ex.level;
             document.getElementById('ex-desc').innerHTML = ex.desc;
             document.getElementById('ex-editor').value = '';
-            document.getElementById('ex-result').innerHTML = '';
+            document.getElementById('ex-result').innerHTML = '<div class="flex items-center justify-center h-full text-slate-400 text-xs italic">Kết quả sẽ hiện ở đây</div>';
             document.getElementById('ex-feedback').innerHTML = '';
             
             // Auto load required dataset
             loadSampleDataset(ex.dataset);
+        }
+
+        function showExerciseAnswer() {
+            if(currentExerciseIdx === -1) return;
+            const ex = EXERCISES[currentExerciseIdx];
+            if(confirm("Bạn có chắc muốn xem đáp án? Sẽ không được tính điểm cho bài này.")) {
+                document.getElementById('ex-editor').value = ex.solution;
+            }
         }
 
         function checkExercise() {
@@ -1629,19 +1653,19 @@ Return ONLY the SQL code block. No explanation.
 
                 // Check logic
                 if(ex.check(res)) {
-                    feedbackEl.innerHTML = '<span class="text-green-600">🎉 Chính xác! +10 XP</span>';
+                    feedbackEl.innerHTML = '<span class="text-green-600 flex items-center gap-1"><span class="material-symbols-outlined text-lg">check_circle</span> Chính xác! +10 XP</span>';
                     if(!USER_STATE.completedExercises.includes(ex.id)) {
                         USER_STATE.completedExercises.push(ex.id);
                         addXP(10);
                         saveUserData();
-                        initExercises(); // Refresh UI
+                        initExercises(); // Refresh UI list
                     }
                 } else {
-                    feedbackEl.innerHTML = '<span class="text-red-600">🤔 Chưa đúng. Hãy kiểm tra lại.</span>';
+                    feedbackEl.innerHTML = '<span class="text-red-600 flex items-center gap-1"><span class="material-symbols-outlined text-lg">error</span> Chưa đúng. Hãy kiểm tra lại.</span>';
                 }
 
             } catch(e) {
-                feedbackEl.innerHTML = `<span class="text-red-600">Lỗi cú pháp: ${e.message}</span>`;
+                feedbackEl.innerHTML = `<span class="text-red-600 font-mono text-xs">Lỗi: ${e.message}</span>`;
             }
         }
 
@@ -1664,7 +1688,6 @@ Return ONLY the SQL code block. No explanation.
 
         function addXP(amount) {
             USER_STATE.xp += amount;
-            // Simple level up logic: Level = 1 + floor(XP / 100)
             const newLevel = 1 + Math.floor(USER_STATE.xp / 100);
             if(newLevel > USER_STATE.level) {
                 showToast(`Thăng cấp! Bạn đã đạt Level ${newLevel}`);
@@ -1682,27 +1705,31 @@ Return ONLY the SQL code block. No explanation.
         // 4. HINTS & EXPLAIN
         function explainCurrentQuery() {
             const sql = document.getElementById('sql-editor').value;
-            // Basic naive parser explanation
-            let explanation = "<b>Giải thích Query:</b><br>";
-            if(sql.toUpperCase().includes('SELECT')) explanation += "- <b>SELECT</b>: Chọn các cột dữ liệu.<br>";
-            if(sql.toUpperCase().includes('FROM')) explanation += "- <b>FROM</b>: Từ bảng nguồn.<br>";
-            if(sql.toUpperCase().includes('WHERE')) explanation += "- <b>WHERE</b>: Lọc dữ liệu theo điều kiện.<br>";
-            if(sql.toUpperCase().includes('JOIN')) explanation += "- <b>JOIN</b>: Kết hợp với bảng khác.<br>";
+            // Simple explain logic without AI cost
+            let explanation = "<b>Phân tích nhanh:</b><br>";
+            if(!sql) { alert("Hãy nhập câu lệnh trước."); return; }
             
-            showToast("Đã hiện giải thích (xem console hoặc popup nếu cần - simplified)");
-            // In a real app we'd show a modal, here we use the AI box logic if available or just alert
+            if(sql.toUpperCase().includes('SELECT')) explanation += "- <b>SELECT</b>: Đang lấy dữ liệu.<br>";
+            if(sql.toUpperCase().includes('JOIN')) explanation += "- <b>JOIN</b>: Đang kết hợp bảng.<br>";
+            if(sql.toUpperCase().includes('WHERE')) explanation += "- <b>WHERE</b>: Đang lọc điều kiện.<br>";
+            if(sql.toUpperCase().includes('GROUP BY')) explanation += "- <b>GROUP BY</b>: Đang gom nhóm dữ liệu.<br>";
+            
+            showToast("Đã phân tích xong.");
+            // In real app show a nice modal, here alert is simpler
             alert(explanation.replace(/<br>/g, '\n').replace(/<b>/g,'').replace(/<\/b>/g,''));
         }
 
         function fixCurrentQuery() {
-            // Simple heuristics
             let sql = document.getElementById('sql-editor').value;
             let suggestion = "";
-            if(!sql.toUpperCase().includes('FROM')) suggestion = "Thiếu mệnh đề FROM.";
-            else if(sql.includes("==")) suggestion = "Trong SQL so sánh bằng dùng '=', không dùng '=='.";
+            if(!sql) return;
             
-            if(suggestion) alert("Gợi ý: " + suggestion);
-            else alert("Cú pháp có vẻ ổn về mặt cơ bản. Nếu lỗi, hãy kiểm tra tên bảng/cột.");
+            if(!sql.toUpperCase().includes('FROM') && sql.toUpperCase().includes('SELECT')) suggestion = "Thiếu mệnh đề FROM để chỉ định bảng.";
+            else if(sql.includes("==")) suggestion = "Trong SQL so sánh bằng dùng '=', không dùng '=='.";
+            else if(sql.toUpperCase().includes('WHERE') && sql.includes(',')) suggestion = "Trong WHERE, dùng AND/OR để nối điều kiện, không dùng dấu phẩy.";
+            
+            if(suggestion) alert("Gợi ý sửa lỗi: " + suggestion);
+            else alert("Cú pháp cơ bản có vẻ ổn. Nếu vẫn lỗi, hãy kiểm tra tên Bảng/Cột.");
         }
 
         // 5. VISUALIZER (ERD)
@@ -1721,12 +1748,10 @@ Return ONLY the SQL code block. No explanation.
             const tablesData = {};
             const tableList = alasql(`SHOW TABLES FROM ${alasql.useid}`);
             
-            // First pass: Identify Tables and potential PKs
             tableList.forEach(t => {
                 const cols = alasql(`SHOW COLUMNS FROM ${t.tableid}`);
-                // Simple heuristic: First column containing 'Ma' or 'ID' is PK
                 let pk = cols.find(c => c.columnid.toLowerCase().startsWith('ma') || c.columnid.toLowerCase().includes('id'))?.columnid;
-                if (!pk && cols.length > 0) pk = cols[0].columnid; // Fallback to first col
+                if (!pk && cols.length > 0) pk = cols[0].columnid; 
 
                 tablesData[t.tableid] = {
                     name: t.tableid,
@@ -1735,15 +1760,13 @@ Return ONLY the SQL code block. No explanation.
                 };
             });
 
-            // Second pass: Identify FKs and Relationships
+            // Relationships
             const relationships = [];
             Object.values(tablesData).forEach(table => {
                 table.columns.forEach(col => {
-                    // Check if this column is a PK of ANOTHER table
                     const targetTable = Object.values(tablesData).find(t => t.name !== table.name && t.pk === col.columnid);
                     if (targetTable) {
                         col.isFK = true;
-                        col.targetTable = targetTable.name;
                         relationships.push({ from: table.name, to: targetTable.name });
                     }
                     if (col.columnid === table.pk) {
@@ -1752,18 +1775,18 @@ Return ONLY the SQL code block. No explanation.
                 });
             });
 
-            // 2. Render Tables (Layout)
+            // Render Tables
             const tableNames = Object.keys(tablesData);
             const count = tableNames.length;
             const centerX = canvas.offsetWidth / 2;
             const centerY = canvas.offsetHeight / 2;
-            const radius = Math.min(centerX, centerY) - 120; // Padding
+            const radius = Math.min(centerX, centerY) - 140; 
             
             tableNames.forEach((name, i) => {
                 const table = tablesData[name];
                 const angle = (i / count) * 2 * Math.PI;
-                const x = centerX + radius * Math.cos(angle) - 100; // -100 for half width
-                const y = centerY + radius * Math.sin(angle) - 100; // rough offset
+                const x = centerX + radius * Math.cos(angle) - 90;
+                const y = centerY + radius * Math.sin(angle) - 100;
 
                 const el = document.createElement('div');
                 el.className = 'erd-table absolute bg-white border border-slate-300 rounded shadow-md text-sm w-48 transition-transform hover:z-50 hover:scale-105';
@@ -1776,23 +1799,22 @@ Return ONLY the SQL code block. No explanation.
                     let badge = '';
                     let rowClass = '';
                     if (c.isPK) {
-                        badge = '<span class="text-[10px] font-bold bg-yellow-100 text-yellow-700 px-1 rounded border border-yellow-200 ml-1">PK</span>';
+                        badge = '<span class="text-[10px] font-bold bg-yellow-100 text-yellow-700 px-1 rounded ml-auto">PK</span>';
                         rowClass = 'bg-yellow-50/50 font-semibold';
                     } else if (c.isFK) {
-                        badge = '<span class="text-[10px] font-bold bg-blue-100 text-blue-700 px-1 rounded border border-blue-200 ml-1">FK</span>';
+                        badge = '<span class="text-[10px] font-bold bg-blue-100 text-blue-700 px-1 rounded ml-auto">FK</span>';
                         rowClass = 'text-blue-900';
                     }
 
                     rowsHtml += `
-                        <div class="px-3 py-1.5 border-b border-slate-100 flex justify-between items-center ${rowClass}">
-                            <div class="flex items-center">
-                                ${c.isPK ? '<span class="material-symbols-outlined text-[10px] mr-1 text-yellow-600">vpn_key</span>' : 
-                                  c.isFK ? '<span class="material-symbols-outlined text-[10px] mr-1 text-blue-500">link</span>' : 
-                                  '<span class="material-symbols-outlined text-[10px] mr-1 text-slate-300">abc</span>'}
-                                <span>${c.columnid}</span>
+                        <div class="px-3 py-1.5 border-b border-slate-100 flex items-center ${rowClass}">
+                            <div class="flex items-center gap-1 w-full">
+                                ${c.isPK ? '<span class="material-symbols-outlined text-[12px] text-yellow-600">vpn_key</span>' : 
+                                  c.isFK ? '<span class="material-symbols-outlined text-[12px] text-blue-500">link</span>' : 
+                                  '<span class="material-symbols-outlined text-[12px] text-slate-300">abc</span>'}
+                                <span class="truncate">${c.columnid}</span>
                                 ${badge}
                             </div>
-                            <span class="text-[9px] text-slate-400 font-mono">${c.dbtypeid || 'STR'}</span>
                         </div>`;
                 });
 
@@ -1807,8 +1829,8 @@ Return ONLY the SQL code block. No explanation.
                 canvas.appendChild(el);
             });
 
-            // 3. Draw Lines (SVG)
-            setTimeout(() => { // delay slightly to let DOM render height
+            // Draw Lines
+            setTimeout(() => { 
                 relationships.forEach(rel => {
                     const fromEl = document.getElementById(`erd-tbl-${rel.from}`);
                     const toEl = document.getElementById(`erd-tbl-${rel.to}`);
@@ -1830,12 +1852,11 @@ Return ONLY the SQL code block. No explanation.
                         svg.appendChild(line);
                     }
                 });
-            }, 50);
+            }, 100);
 
-            // Add Arrow Marker
             svg.innerHTML += `
                 <defs>
-                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="28" refY="3.5" orient="auto">
+                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
                         <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8" />
                     </marker>
                 </defs>
@@ -1870,7 +1891,6 @@ Return ONLY the SQL code block. No explanation.
             const sql = document.getElementById('sql-editor').value;
             const url = new URL(window.location);
             url.searchParams.set('q', encodeURIComponent(sql));
-            // In a real server env we would shorten this
             navigator.clipboard.writeText(url.toString());
             showToast("Đã copy link chia sẻ (kèm query)!");
         }
@@ -1881,23 +1901,25 @@ Return ONLY the SQL code block. No explanation.
             container.innerHTML = '';
             THEORY_DATA.forEach(item => {
                 container.innerHTML += `
-                    <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-                        <h4 class="font-bold text-indigo-700 mb-1">${item.title}</h4>
-                        <p class="text-sm text-slate-600 mb-2">${item.content}</p>
-                        <div class="bg-slate-800 text-green-300 p-2 rounded text-xs font-mono mb-2">${item.code}</div>
-                        <button onclick="insertSampleQuery('${item.code}')" class="text-xs bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded text-slate-600 font-bold">Chạy thử ngay</button>
+                    <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm hover:border-indigo-300 transition">
+                        <h4 class="font-bold text-indigo-700 mb-2 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-lg">lightbulb</span> ${item.title}
+                        </h4>
+                        <p class="text-sm text-slate-600 mb-3">${item.content}</p>
+                        <div class="bg-slate-800 text-green-300 p-3 rounded-lg text-xs font-mono mb-3 overflow-x-auto">${item.code}</div>
+                        <button onclick="insertSampleQuery('${item.code}'); scrollToSection('demo')" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded font-bold flex items-center gap-1 w-fit transition">
+                            <span class="material-symbols-outlined text-sm">play_circle</span> Thử Ngay
+                        </button>
                     </div>
                 `;
             });
         }
 
-        // Check for shared query on load
         window.onload = function() {
             const params = new URLSearchParams(window.location.search);
             const sharedQ = params.get('q');
             if(sharedQ) {
                 document.getElementById('sql-editor').value = decodeURIComponent(sharedQ);
-                // Switch to demo tab automatically
                 scrollToSection('demo');
             }
         }
