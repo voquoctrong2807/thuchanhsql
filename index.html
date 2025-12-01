@@ -188,71 +188,37 @@
                 <div class="bg-indigo-600 text-white p-2 rounded-lg shadow-lg shadow-indigo-200"><span class="material-symbols-outlined">terminal</span></div>
                 <div>
                     <h2 class="text-2xl font-bold text-slate-800">1.4 SQL Live Demo (Thực hành)</h2>
-                    <p class="text-slate-500 text-sm">Chạy thử các câu lệnh SQL trực tiếp trên trình duyệt với dữ liệu mẫu.</p>
+                    <p class="text-slate-500 text-sm">Chạy thử các câu lệnh SQL trực tiếp trên trình duyệt với dữ liệu mẫu hoặc CSDL của bạn.</p>
                 </div>
             </div>
 
             <div class="grid lg:grid-cols-3 gap-6 h-[calc(100vh-200px)] min-h-[500px]">
                 
-                <!-- LEFT: Schema Viewer -->
+                <!-- LEFT: Schema Viewer (Dynamic) -->
                 <div class="bg-white border border-slate-200 rounded-xl flex flex-col shadow-sm overflow-hidden">
-                    <div class="p-3 bg-slate-50 border-b border-slate-200 font-bold text-slate-700 text-sm flex justify-between items-center">
-                        <span>CSDL: qlysinhvien</span>
-                        <span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Active</span>
+                    <!-- DB Control Header -->
+                    <div class="p-3 bg-slate-50 border-b border-slate-200 text-sm flex flex-col gap-2">
+                        <div class="flex justify-between items-center">
+                            <span id="current-db-name" class="font-bold text-indigo-900 flex items-center gap-1"><span class="material-symbols-outlined text-sm">database</span> qlysinhvien</span>
+                            <span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">Active</span>
+                        </div>
+                        <div class="flex gap-1">
+                            <button onclick="createNewDB()" class="flex-1 bg-white border border-slate-300 rounded text-[10px] font-bold text-slate-600 py-1.5 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-300 transition flex items-center justify-center gap-1" title="Tạo CSDL Mới">
+                                <span class="material-symbols-outlined text-[12px]">add</span> Mới
+                            </button>
+                            <button onclick="triggerImport()" class="flex-1 bg-white border border-slate-300 rounded text-[10px] font-bold text-slate-600 py-1.5 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-300 transition flex items-center justify-center gap-1" title="Nhập file SQL">
+                                <span class="material-symbols-outlined text-[12px]">upload</span> Nhập
+                            </button>
+                            <button onclick="exportDB()" class="flex-1 bg-white border border-slate-300 rounded text-[10px] font-bold text-slate-600 py-1.5 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-300 transition flex items-center justify-center gap-1" title="Xuất file SQL">
+                                <span class="material-symbols-outlined text-[12px]">download</span> Xuất
+                            </button>
+                            <input type="file" id="import-file" class="hidden" accept=".sql" onchange="handleFileImport(this)">
+                        </div>
                     </div>
-                    <div class="p-3 space-y-3 overflow-y-auto flex-1 custom-scroll">
-                        <!-- Table Lop -->
-                        <div class="border border-slate-200 rounded-lg overflow-hidden">
-                            <button onclick="insertSampleQuery('SELECT * FROM Lop')" class="w-full text-left p-2 bg-slate-50 hover:bg-indigo-50 text-xs font-bold text-slate-700 border-b border-slate-200 flex justify-between items-center transition">
-                                <span>📂 Lop</span>
-                                <span class="material-symbols-outlined text-base opacity-50">play_arrow</span>
-                            </button>
-                            <div class="p-2 text-[11px] text-slate-600 space-y-1 bg-white">
-                                <div class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-yellow-600">vpn_key</span> MaLop (PK)</div>
-                                <div class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-slate-400">text_fields</span> TenLop</div>
-                            </div>
-                        </div>
-
-                        <!-- Table SinhVien -->
-                        <div class="border border-slate-200 rounded-lg overflow-hidden">
-                            <button onclick="insertSampleQuery('SELECT * FROM SinhVien')" class="w-full text-left p-2 bg-slate-50 hover:bg-indigo-50 text-xs font-bold text-slate-700 border-b border-slate-200 flex justify-between items-center transition">
-                                <span>📂 SinhVien</span>
-                                <span class="material-symbols-outlined text-base opacity-50">play_arrow</span>
-                            </button>
-                            <div class="p-2 text-[11px] text-slate-600 space-y-1 bg-white">
-                                <div class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-yellow-600">vpn_key</span> MaSV (PK)</div>
-                                <div class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-slate-400">text_fields</span> HoTen</div>
-                                <div class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-slate-400">calendar_today</span> NgaySinh</div>
-                                <div class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-slate-400">wc</span> GioiTinh</div>
-                                <div class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-blue-400">key</span> MaLop (FK)</div>
-                            </div>
-                        </div>
-
-                        <!-- Table MonHoc -->
-                        <div class="border border-slate-200 rounded-lg overflow-hidden">
-                            <button onclick="insertSampleQuery('SELECT * FROM MonHoc')" class="w-full text-left p-2 bg-slate-50 hover:bg-indigo-50 text-xs font-bold text-slate-700 border-b border-slate-200 flex justify-between items-center transition">
-                                <span>📂 MonHoc</span>
-                                <span class="material-symbols-outlined text-base opacity-50">play_arrow</span>
-                            </button>
-                            <div class="p-2 text-[11px] text-slate-600 space-y-1 bg-white">
-                                <div class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-yellow-600">vpn_key</span> MaMH (PK)</div>
-                                <div class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-slate-400">text_fields</span> TenMH</div>
-                                <div class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-slate-400">123</span> SoTinChi</div>
-                            </div>
-                        </div>
-
-                        <!-- Table KetQua -->
-                        <div class="border border-slate-200 rounded-lg overflow-hidden">
-                            <button onclick="insertSampleQuery('SELECT * FROM KetQua')" class="w-full text-left p-2 bg-slate-50 hover:bg-indigo-50 text-xs font-bold text-slate-700 border-b border-slate-200 flex justify-between items-center transition">
-                                <span>📂 KetQua</span>
-                                <span class="material-symbols-outlined text-base opacity-50">play_arrow</span>
-                            </button>
-                            <div class="p-2 text-[11px] text-slate-600 space-y-1 bg-white">
-                                <div class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-blue-400">key</span> MaSV (PK, FK)</div>
-                                <div class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-blue-400">key</span> MaMH (PK, FK)</div>
-                                <div class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-slate-400">123</span> Diem</div>
-                            </div>
-                        </div>
+                    
+                    <!-- Dynamic Table List -->
+                    <div id="schema-container" class="p-3 space-y-3 overflow-y-auto flex-1 custom-scroll">
+                        <!-- Content will be injected by JS -->
                     </div>
                 </div>
 
@@ -1003,27 +969,167 @@ C, D -> E</textarea>
             alasql("CREATE DATABASE IF NOT EXISTS qlysinhvien");
             alasql("USE qlysinhvien");
 
-            alasql("CREATE TABLE Lop (MaLop STRING, TenLop STRING)");
-            alasql("CREATE TABLE SinhVien (MaSV STRING, HoTen STRING, NgaySinh DATE, GioiTinh STRING, MaLop STRING)");
-            alasql("CREATE TABLE MonHoc (MaMH STRING, TenMH STRING, SoTinChi INT)");
-            alasql("CREATE TABLE KetQua (MaSV STRING, MaMH STRING, Diem FLOAT)");
+            alasql("CREATE TABLE IF NOT EXISTS Lop (MaLop STRING, TenLop STRING)");
+            alasql("CREATE TABLE IF NOT EXISTS SinhVien (MaSV STRING, HoTen STRING, NgaySinh DATE, GioiTinh STRING, MaLop STRING)");
+            alasql("CREATE TABLE IF NOT EXISTS MonHoc (MaMH STRING, TenMH STRING, SoTinChi INT)");
+            alasql("CREATE TABLE IF NOT EXISTS KetQua (MaSV STRING, MaMH STRING, Diem FLOAT)");
 
-            // Seed Data
-            alasql("INSERT INTO Lop VALUES ('L01', 'CNTT K15'), ('L02', 'Kinh Te K15'), ('L03', 'Ngon Ngu Anh')");
+            // Check if data exists before inserting to avoid duplicates on re-run
+            if (alasql("SELECT COUNT(*) as cnt FROM Lop")[0].cnt == 0) {
+                alasql("INSERT INTO Lop VALUES ('L01', 'CNTT K15'), ('L02', 'Kinh Te K15'), ('L03', 'Ngon Ngu Anh')");
+                alasql("INSERT INTO SinhVien VALUES ('SV01', 'Nguyen Van An', '2003-01-01', 'Nam', 'L01')");
+                alasql("INSERT INTO SinhVien VALUES ('SV02', 'Tran Thi Binh', '2003-05-12', 'Nu', 'L01')");
+                alasql("INSERT INTO SinhVien VALUES ('SV03', 'Le Van Cuong', '2002-11-20', 'Nam', 'L02')");
+                alasql("INSERT INTO SinhVien VALUES ('SV04', 'Pham My Duyen', '2003-08-15', 'Nu', 'L02')");
+                alasql("INSERT INTO SinhVien VALUES ('SV05', 'Hoang Van Em', '2003-02-10', 'Nam', 'L01')");
+                alasql("INSERT INTO MonHoc VALUES ('MH01', 'Co so du lieu', 3), ('MH02', 'Lap trinh Java', 4), ('MH03', 'Toan roi rac', 3)");
+                alasql("INSERT INTO KetQua VALUES ('SV01', 'MH01', 8.5), ('SV01', 'MH02', 9.0)");
+                alasql("INSERT INTO KetQua VALUES ('SV02', 'MH01', 7.0), ('SV02', 'MH03', 8.0)");
+                alasql("INSERT INTO KetQua VALUES ('SV03', 'MH02', 5.5)");
+                alasql("INSERT INTO KetQua VALUES ('SV04', 'MH01', 9.5), ('SV04', 'MH03', 9.0)");
+                alasql("INSERT INTO KetQua VALUES ('SV05', 'MH01', 4.0), ('SV05', 'MH02', 5.0)");
+            }
+            refreshSchemaViewer();
+        }
+
+        function refreshSchemaViewer() {
+            const container = document.getElementById('schema-container');
+            const dbNameLabel = document.getElementById('current-db-name');
+            const currentDb = alasql.useid;
             
-            alasql("INSERT INTO SinhVien VALUES ('SV01', 'Nguyen Van An', '2003-01-01', 'Nam', 'L01')");
-            alasql("INSERT INTO SinhVien VALUES ('SV02', 'Tran Thi Binh', '2003-05-12', 'Nu', 'L01')");
-            alasql("INSERT INTO SinhVien VALUES ('SV03', 'Le Van Cuong', '2002-11-20', 'Nam', 'L02')");
-            alasql("INSERT INTO SinhVien VALUES ('SV04', 'Pham My Duyen', '2003-08-15', 'Nu', 'L02')");
-            alasql("INSERT INTO SinhVien VALUES ('SV05', 'Hoang Van Em', '2003-02-10', 'Nam', 'L01')");
+            dbNameLabel.innerHTML = `<span class="material-symbols-outlined text-sm">database</span> ${currentDb}`;
+            container.innerHTML = '';
 
-            alasql("INSERT INTO MonHoc VALUES ('MH01', 'Co so du lieu', 3), ('MH02', 'Lap trinh Java', 4), ('MH03', 'Toan roi rac', 3)");
+            const tables = alasql(`SHOW TABLES FROM ${currentDb}`);
+            
+            if (tables.length === 0) {
+                container.innerHTML = '<div class="text-xs text-slate-400 italic text-center p-4">Chưa có bảng nào. <br>Hãy tạo bảng hoặc nhập dữ liệu.</div>';
+                return;
+            }
 
-            alasql("INSERT INTO KetQua VALUES ('SV01', 'MH01', 8.5), ('SV01', 'MH02', 9.0)");
-            alasql("INSERT INTO KetQua VALUES ('SV02', 'MH01', 7.0), ('SV02', 'MH03', 8.0)");
-            alasql("INSERT INTO KetQua VALUES ('SV03', 'MH02', 5.5)");
-            alasql("INSERT INTO KetQua VALUES ('SV04', 'MH01', 9.5), ('SV04', 'MH03', 9.0)");
-            alasql("INSERT INTO KetQua VALUES ('SV05', 'MH01', 4.0), ('SV05', 'MH02', 5.0)");
+            tables.forEach(t => {
+                const tableName = t.tableid;
+                // AlaSQL SHOW COLUMNS returns array of column info
+                const cols = alasql(`SHOW COLUMNS FROM ${tableName}`);
+                
+                let colsHtml = '';
+                cols.forEach(c => {
+                    let icon = 'text_fields';
+                    let color = 'text-slate-400';
+                    let cName = c.columnid;
+                    
+                    if (cName.toLowerCase().includes('id') || cName.toLowerCase().includes('ma')) {
+                        icon = 'vpn_key';
+                        color = 'text-yellow-600';
+                    }
+                    if (cName.toLowerCase().includes('date') || cName.toLowerCase().includes('ngay')) {
+                        icon = 'calendar_today';
+                    }
+                    
+                    colsHtml += `<div class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px] ${color}">${icon}</span> ${cName} <span class="text-[9px] text-slate-300 ml-auto">${c.dbtypeid || ''}</span></div>`;
+                });
+
+                const html = `
+                    <div class="border border-slate-200 rounded-lg overflow-hidden group">
+                        <button onclick="insertSampleQuery('SELECT * FROM ${tableName}')" class="w-full text-left p-2 bg-slate-50 hover:bg-indigo-50 text-xs font-bold text-slate-700 border-b border-slate-200 flex justify-between items-center transition">
+                            <span>📂 ${tableName}</span>
+                            <span class="material-symbols-outlined text-base opacity-50 group-hover:text-indigo-600">play_arrow</span>
+                        </button>
+                        <div class="p-2 text-[11px] text-slate-600 space-y-1 bg-white">
+                            ${colsHtml}
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += html;
+            });
+        }
+
+        function createNewDB() {
+            const name = prompt("Nhập tên CSDL mới (viết liền, không dấu):", "new_db");
+            if (name) {
+                try {
+                    // Sanitize name simple check
+                    if(/[^a-zA-Z0-9_]/.test(name)) {
+                        alert("Tên CSDL chỉ được chứa chữ cái, số và dấu gạch dưới.");
+                        return;
+                    }
+                    alasql(`CREATE DATABASE ${name}`);
+                    alasql(`USE ${name}`);
+                    refreshSchemaViewer();
+                    showToast(`Đã tạo và chuyển sang: ${name}`);
+                    document.getElementById('sql-editor').value = `CREATE TABLE ViDu (ID INT, Ten STRING);\nINSERT INTO ViDu VALUES (1, 'Hello');\nSELECT * FROM ViDu;`;
+                } catch(e) {
+                    alert("Lỗi: " + e.message);
+                }
+            }
+        }
+
+        function triggerImport() {
+            document.getElementById('import-file').click();
+        }
+
+        function handleFileImport(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const sql = e.target.result;
+                try {
+                    // Try to detect if USE statement exists, otherwise execute on current DB
+                    // AlaSQL handles multiple statements if separated by semicolon
+                    alasql(sql); 
+                    refreshSchemaViewer();
+                    showToast("Đã nhập dữ liệu thành công!");
+                    document.getElementById('row-count').innerText = "Import xong";
+                    document.getElementById('query-result-container').innerHTML = '<div class="p-4 text-green-600 font-mono text-sm">Dữ liệu đã được nạp vào hệ thống.</div>';
+                } catch(err) {
+                    alert("Lỗi nhập file: " + err.message);
+                }
+            };
+            reader.readAsText(file);
+            input.value = ''; 
+        }
+
+        function exportDB() {
+            const currentDb = alasql.useid;
+            let sql = `-- Export CSDL: ${currentDb}\n-- Time: ${new Date().toLocaleString()}\n\nCREATE DATABASE IF NOT EXISTS ${currentDb};\nUSE ${currentDb};\n\n`;
+            
+            const tables = alasql(`SHOW TABLES FROM ${currentDb}`);
+            
+            tables.forEach(t => {
+                const tableName = t.tableid;
+                
+                // 1. Create Table (Simplified reconstruction)
+                const cols = alasql.databases[currentDb].tables[tableName].columns; 
+                if(cols && cols.length > 0) {
+                     const colDefs = cols.map(c => `${c.columnid} ${c.dbtypeid || 'STRING'}`).join(', ');
+                     sql += `CREATE TABLE IF NOT EXISTS ${tableName} (${colDefs});\n`;
+                } else {
+                     // If defined without columns (standard AlaSQL behavior allowing schemaless)
+                     // We try to infer or just skip CREATE for now, but usually for SQL export we need it.
+                     // We'll skip precise CREATE if no metadata found.
+                }
+
+                // 2. Insert Data
+                const data = alasql(`SELECT * FROM ${tableName}`);
+                if (data.length > 0) {
+                    data.forEach(row => {
+                        const values = Object.values(row).map(v => {
+                            if (typeof v === 'string') return `'${v.replace(/'/g, "''")}'`; 
+                            if (v instanceof Date) return `'${v.toISOString().slice(0,10)}'`; 
+                            return v;
+                        }).join(', ');
+                        sql += `INSERT INTO ${tableName} VALUES (${values});\n`;
+                    });
+                }
+                sql += '\n';
+            });
+
+            const blob = new Blob([sql], { type: 'text/sql' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `${currentDb}_backup.sql`;
+            a.click();
         }
 
         function runDemoQuery() {
@@ -1034,6 +1140,11 @@ C, D -> E</textarea>
             try {
                 const res = alasql(query);
                 
+                // If the query was a CREATE/INSERT/UPDATE/USE, refreshes might be needed
+                if(query.toUpperCase().includes('CREATE') || query.toUpperCase().includes('DROP') || query.toUpperCase().includes('USE')) {
+                    refreshSchemaViewer();
+                }
+
                 // Handle empty result or non-array result
                 if (!res || !Array.isArray(res)) {
                     resContainer.innerHTML = '<div class="p-4 text-green-600 font-mono text-sm">Query executed successfully (No Rows Returned).</div>';
@@ -1047,13 +1158,25 @@ C, D -> E</textarea>
                      return;
                 }
 
+                // Handle AlaSQL multiple statements result (returns array of arrays)
+                let dataToRender = res;
+                if (Array.isArray(res[0])) {
+                    dataToRender = res[res.length - 1]; // Show last result
+                }
+
+                if (!Array.isArray(dataToRender) || dataToRender.length === 0) {
+                     resContainer.innerHTML = '<div class="p-4 text-green-600 font-mono text-sm">Command Executed.</div>';
+                     rowCount.innerText = "-";
+                     return;
+                }
+
                 // Render Table
-                const cols = Object.keys(res[0]);
+                const cols = Object.keys(dataToRender[0]);
                 let html = '<table class="sql-result-table"><thead><tr>';
                 cols.forEach(c => html += `<th>${c}</th>`);
                 html += '</tr></thead><tbody>';
                 
-                res.forEach(row => {
+                dataToRender.forEach(row => {
                     html += '<tr>';
                     cols.forEach(c => html += `<td>${row[c]}</td>`);
                     html += '</tr>';
@@ -1061,7 +1184,7 @@ C, D -> E</textarea>
                 html += '</tbody></table>';
                 
                 resContainer.innerHTML = html;
-                rowCount.innerText = `${res.length} dòng`;
+                rowCount.innerText = `${dataToRender.length} dòng`;
 
             } catch (e) {
                 resContainer.innerHTML = `<div class="p-4 text-red-600 font-mono text-sm"><strong>Lỗi cú pháp:</strong><br>${e.message}</div>`;
