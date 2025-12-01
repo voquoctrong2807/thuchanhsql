@@ -70,6 +70,12 @@
         .exercise-card.completed { border-color: #86efac; background-color: #f0fdf4; }
         .badge-icon { background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         
+        /* ERD Specific Styles */
+        #erd-canvas { position: relative; }
+        .erd-table { position: absolute; z-index: 10; width: 200px; background: white; border: 1px solid #cbd5e1; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); transition: transform 0.2s; }
+        .erd-table:hover { transform: scale(1.05); z-index: 20; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        #erd-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+
         /* --- PRINT CSS (TỐI ƯU CHO PDF) --- */
         @media print {
             @page { margin: 1.5cm; size: A4; }
@@ -268,7 +274,12 @@
                             <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2"><span class="material-symbols-outlined">hub</span> Sơ đồ Quan hệ (ERD)</h3>
                             <button onclick="toggleVisualizer()" class="p-1 hover:bg-slate-100 rounded"><span class="material-symbols-outlined">close</span></button>
                         </div>
-                        <div id="erd-canvas" class="flex-1 border border-slate-200 rounded bg-slate-50 relative p-4 overflow-auto flex flex-wrap gap-8 items-start justify-center">
+                        <div id="erd-canvas" class="flex-1 border border-slate-200 rounded bg-slate-50 relative p-4 overflow-hidden flex items-center justify-center cursor-move">
+                            <div class="absolute text-slate-400 text-xs bottom-2 left-2 z-0 italic pointer-events-none">
+                                <span class="inline-block w-2 h-2 bg-yellow-400 rounded-full mr-1"></span> PK (Khóa Chính)
+                                <span class="inline-block w-2 h-2 bg-blue-400 rounded-full mr-1 ml-2"></span> FK (Khóa Ngoại)
+                            </div>
+                            <svg id="erd-svg" width="100%" height="100%" class="absolute top-0 left-0 w-full h-full pointer-events-none z-0"></svg>
                             <!-- Tables will be drawn here -->
                         </div>
                     </div>
@@ -1703,32 +1714,132 @@ Return ONLY the SQL code block. No explanation.
 
         function drawERD() {
             const canvas = document.getElementById('erd-canvas');
-            canvas.innerHTML = '';
-            const tables = alasql(`SHOW TABLES FROM ${alasql.useid}`);
+            canvas.innerHTML = '<svg id="erd-svg" width="100%" height="100%"></svg>';
+            const svg = document.getElementById('erd-svg');
             
-            tables.forEach(t => {
-                const tableName = t.tableid;
-                const cols = alasql(`SHOW COLUMNS FROM ${tableName}`);
-                
-                const tableCard = document.createElement('div');
-                tableCard.className = 'bg-white border-2 border-slate-300 rounded shadow-sm w-48 text-sm';
-                
+            // 1. Parse Schema
+            const tablesData = {};
+            const tableList = alasql(`SHOW TABLES FROM ${alasql.useid}`);
+            
+            // First pass: Identify Tables and potential PKs
+            tableList.forEach(t => {
+                const cols = alasql(`SHOW COLUMNS FROM ${t.tableid}`);
+                // Simple heuristic: First column containing 'Ma' or 'ID' is PK
+                let pk = cols.find(c => c.columnid.toLowerCase().startsWith('ma') || c.columnid.toLowerCase().includes('id'))?.columnid;
+                if (!pk && cols.length > 0) pk = cols[0].columnid; // Fallback to first col
+
+                tablesData[t.tableid] = {
+                    name: t.tableid,
+                    columns: cols,
+                    pk: pk
+                };
+            });
+
+            // Second pass: Identify FKs and Relationships
+            const relationships = [];
+            Object.values(tablesData).forEach(table => {
+                table.columns.forEach(col => {
+                    // Check if this column is a PK of ANOTHER table
+                    const targetTable = Object.values(tablesData).find(t => t.name !== table.name && t.pk === col.columnid);
+                    if (targetTable) {
+                        col.isFK = true;
+                        col.targetTable = targetTable.name;
+                        relationships.push({ from: table.name, to: targetTable.name });
+                    }
+                    if (col.columnid === table.pk) {
+                        col.isPK = true;
+                    }
+                });
+            });
+
+            // 2. Render Tables (Layout)
+            const tableNames = Object.keys(tablesData);
+            const count = tableNames.length;
+            const centerX = canvas.offsetWidth / 2;
+            const centerY = canvas.offsetHeight / 2;
+            const radius = Math.min(centerX, centerY) - 120; // Padding
+            
+            tableNames.forEach((name, i) => {
+                const table = tablesData[name];
+                const angle = (i / count) * 2 * Math.PI;
+                const x = centerX + radius * Math.cos(angle) - 100; // -100 for half width
+                const y = centerY + radius * Math.sin(angle) - 100; // rough offset
+
+                const el = document.createElement('div');
+                el.className = 'erd-table absolute bg-white border border-slate-300 rounded shadow-md text-sm w-48 transition-transform hover:z-50 hover:scale-105';
+                el.style.left = `${x}px`;
+                el.style.top = `${y}px`;
+                el.id = `erd-tbl-${name}`;
+
                 let rowsHtml = '';
-                cols.forEach(c => {
-                    const isPK = c.columnid.toLowerCase().includes('id') || c.columnid.toLowerCase().startsWith('ma');
+                table.columns.forEach(c => {
+                    let badge = '';
+                    let rowClass = '';
+                    if (c.isPK) {
+                        badge = '<span class="text-[10px] font-bold bg-yellow-100 text-yellow-700 px-1 rounded border border-yellow-200 ml-1">PK</span>';
+                        rowClass = 'bg-yellow-50/50 font-semibold';
+                    } else if (c.isFK) {
+                        badge = '<span class="text-[10px] font-bold bg-blue-100 text-blue-700 px-1 rounded border border-blue-200 ml-1">FK</span>';
+                        rowClass = 'text-blue-900';
+                    }
+
                     rowsHtml += `
-                        <div class="px-2 py-1 border-b border-slate-100 flex justify-between items-center ${isPK ? 'bg-yellow-50 font-bold' : ''}">
-                            <span>${c.columnid}</span>
-                            <span class="text-[10px] text-slate-400">${c.dbtypeid || ''}</span>
+                        <div class="px-3 py-1.5 border-b border-slate-100 flex justify-between items-center ${rowClass}">
+                            <div class="flex items-center">
+                                ${c.isPK ? '<span class="material-symbols-outlined text-[10px] mr-1 text-yellow-600">vpn_key</span>' : 
+                                  c.isFK ? '<span class="material-symbols-outlined text-[10px] mr-1 text-blue-500">link</span>' : 
+                                  '<span class="material-symbols-outlined text-[10px] mr-1 text-slate-300">abc</span>'}
+                                <span>${c.columnid}</span>
+                                ${badge}
+                            </div>
+                            <span class="text-[9px] text-slate-400 font-mono">${c.dbtypeid || 'STR'}</span>
                         </div>`;
                 });
 
-                tableCard.innerHTML = `
-                    <div class="bg-indigo-100 px-2 py-1 font-bold text-indigo-800 text-center border-b border-indigo-200">${tableName}</div>
-                    ${rowsHtml}
+                el.innerHTML = `
+                    <div class="bg-gradient-to-r from-indigo-600 to-indigo-500 px-3 py-2 font-bold text-white text-center rounded-t border-b border-indigo-700 shadow-sm">
+                        ${table.name}
+                    </div>
+                    <div class="bg-white rounded-b">
+                        ${rowsHtml}
+                    </div>
                 `;
-                canvas.appendChild(tableCard);
+                canvas.appendChild(el);
             });
+
+            // 3. Draw Lines (SVG)
+            setTimeout(() => { // delay slightly to let DOM render height
+                relationships.forEach(rel => {
+                    const fromEl = document.getElementById(`erd-tbl-${rel.from}`);
+                    const toEl = document.getElementById(`erd-tbl-${rel.to}`);
+                    
+                    if(fromEl && toEl) {
+                        const x1 = parseFloat(fromEl.style.left) + fromEl.offsetWidth / 2;
+                        const y1 = parseFloat(fromEl.style.top) + fromEl.offsetHeight / 2;
+                        const x2 = parseFloat(toEl.style.left) + toEl.offsetWidth / 2;
+                        const y2 = parseFloat(toEl.style.top) + toEl.offsetHeight / 2;
+
+                        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                        line.setAttribute('x1', x1);
+                        line.setAttribute('y1', y1);
+                        line.setAttribute('x2', x2);
+                        line.setAttribute('y2', y2);
+                        line.setAttribute('stroke', '#94a3b8');
+                        line.setAttribute('stroke-width', '2');
+                        line.setAttribute('marker-end', 'url(#arrowhead)');
+                        svg.appendChild(line);
+                    }
+                });
+            }, 50);
+
+            // Add Arrow Marker
+            svg.innerHTML += `
+                <defs>
+                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="28" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8" />
+                    </marker>
+                </defs>
+            `;
         }
 
         // 6. EXPORT / SHARE
