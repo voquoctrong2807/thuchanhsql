@@ -196,11 +196,15 @@
                 
                 <!-- LEFT: Schema Viewer (Dynamic) -->
                 <div class="bg-white border border-slate-200 rounded-xl flex flex-col shadow-sm overflow-hidden">
-                    <!-- DB Control Header -->
+                    <!-- DB Control Header (UPDATED with Switcher) -->
                     <div class="p-3 bg-slate-50 border-b border-slate-200 text-sm flex flex-col gap-2">
-                        <div class="flex justify-between items-center">
-                            <span id="current-db-name" class="font-bold text-indigo-900 flex items-center gap-1"><span class="material-symbols-outlined text-sm">database</span> qlysinhvien</span>
-                            <span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">Active</span>
+                        <div class="flex justify-between items-center bg-white border border-slate-200 rounded px-2 py-1">
+                            <div class="flex items-center gap-2 flex-1 min-w-0">
+                                <span class="material-symbols-outlined text-indigo-600 text-sm shrink-0">database</span>
+                                <select id="db-selector" onchange="switchDB(this.value)" class="bg-transparent font-bold text-indigo-900 text-xs outline-none cursor-pointer w-full truncate" title="Chuyển đổi CSDL">
+                                    <!-- Options populated by JS -->
+                                </select>
+                            </div>
                         </div>
                         <div class="flex gap-1">
                             <button onclick="createNewDB()" class="flex-1 bg-white border border-slate-300 rounded text-[10px] font-bold text-slate-600 py-1.5 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-300 transition flex items-center justify-center gap-1" title="Tạo CSDL Mới">
@@ -224,6 +228,31 @@
 
                 <!-- RIGHT: Editor & Result -->
                 <div class="lg:col-span-2 flex flex-col gap-4 h-full">
+                    
+                    <!-- NEW: AI Demo Assistant -->
+                    <div class="bg-gradient-to-r from-indigo-50 to-white p-4 rounded-xl border border-indigo-100 shadow-sm flex flex-col gap-3 relative overflow-hidden group no-print">
+                        <div class="absolute top-0 right-0 w-16 h-16 bg-indigo-100 rounded-bl-full -mr-8 -mt-8 z-0 opacity-50"></div>
+                        <div class="flex items-center gap-2 z-10">
+                            <span class="material-symbols-outlined text-indigo-600">auto_awesome</span>
+                            <h3 class="font-bold text-indigo-900 text-sm">AI Trợ Lý Demo (Thông minh)</h3>
+                        </div>
+                        <div class="flex gap-2 z-10">
+                            <input type="text" id="demo-ai-input" class="flex-1 border border-indigo-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-200 outline-none shadow-sm" placeholder="VD: Liệt kê sinh viên có điểm trên 8.0..." onkeydown="if(event.key === 'Enter') generateDemoSQL()">
+                            <button onclick="generateDemoSQL()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-indigo-700 whitespace-nowrap shadow-md flex items-center gap-1 transition-transform active:scale-95">
+                                <span class="material-symbols-outlined text-sm">psychology</span> Tạo Code
+                            </button>
+                        </div>
+                        <!-- Result Area -->
+                        <div id="demo-ai-result-container" class="hidden mt-1 z-10 animate-fade-in">
+                            <div class="bg-slate-800 text-green-300 rounded-lg p-3 text-xs font-mono mb-2 relative border border-slate-700 shadow-inner">
+                                <div id="demo-ai-output" class="whitespace-pre-wrap"></div>
+                            </div>
+                            <button onclick="runGeneratedSQL()" class="w-full bg-emerald-600 text-white py-2 rounded-lg text-xs font-bold hover:bg-emerald-700 flex items-center justify-center gap-2 shadow-md transition-transform active:scale-95">
+                                <span class="material-symbols-outlined text-base">rocket_launch</span> Chạy Query Ngay
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- Editor -->
                     <div class="flex-1 bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col overflow-hidden relative group">
                         <div class="bg-slate-800 text-slate-300 px-4 py-2 text-xs flex justify-between items-center">
@@ -234,7 +263,7 @@
                             </div>
                         </div>
                         <textarea id="sql-editor" class="flex-1 w-full p-4 bg-[#1e1e1e] text-indigo-100 font-mono text-sm outline-none resize-none leading-relaxed" spellcheck="false">SELECT * FROM SinhVien WHERE GioiTinh = 'Nu'</textarea>
-                        <button onclick="runDemoQuery()" class="absolute bottom-4 right-4 bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded shadow-lg font-bold text-sm flex items-center gap-2 transition transform active:scale-95 z-10">
+                        <button onclick="runDemoQuery()" class="absolute bottom-4 right-4 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded shadow-lg font-bold text-sm flex items-center gap-2 transition transform active:scale-95 z-10">
                             <span class="material-symbols-outlined text-lg">play_arrow</span> Run Query
                         </button>
                     </div>
@@ -963,6 +992,50 @@ C, D -> E</textarea>
             out.innerHTML = marked.parse(res);
         }
 
+        // --- DEMO AI ASSISTANT ---
+        async function generateDemoSQL() {
+            const outContainer = document.getElementById('demo-ai-result-container');
+            const out = document.getElementById('demo-ai-output');
+            const req = document.getElementById('demo-ai-input').value;
+            
+            if(!req.trim()) return;
+
+            outContainer.classList.remove('hidden');
+            out.innerHTML = '<span class="loading-dots">Đang viết code</span>';
+            
+            // Get current schema
+            const currentDb = alasql.useid;
+            const tables = alasql(`SHOW TABLES FROM ${currentDb}`);
+            let schemaInfo = `Database: ${currentDb}\n`;
+            
+            for(const t of tables) {
+                const cols = alasql(`SHOW COLUMNS FROM ${t.tableid}`);
+                schemaInfo += `Table ${t.tableid}: ${cols.map(c=>c.columnid).join(', ')}\n`;
+            }
+
+            const prompt = `
+Context Schema:
+${schemaInfo}
+
+User Request: "${req}"
+
+Task: Write a valid SQL query compatible with AlaSQL (standard SQL) to answer the request based on the schema above. 
+Return ONLY the SQL code block. No explanation.
+`;
+
+            const res = await callGemini(prompt, "You are a SQL generator. Output only raw SQL code without markdown backticks if possible, or inside a sql block.");
+            
+            // Clean up result (remove markdown code blocks if any)
+            let cleanSql = res.replace(/```sql/g, '').replace(/```/g, '').trim();
+            out.innerText = cleanSql;
+        }
+
+        function runGeneratedSQL() {
+            const sql = document.getElementById('demo-ai-output').innerText;
+            if(!sql) return;
+            insertSampleQuery(sql); // Re-use existing function to put in editor and run
+        }
+
         // --- SQL DEMO ENGINE (AlaSQL) ---
         function initSQLDemo() {
             // Create Database & Tables
@@ -994,10 +1067,20 @@ C, D -> E</textarea>
 
         function refreshSchemaViewer() {
             const container = document.getElementById('schema-container');
-            const dbNameLabel = document.getElementById('current-db-name');
+            const dbSelector = document.getElementById('db-selector');
             const currentDb = alasql.useid;
             
-            dbNameLabel.innerHTML = `<span class="material-symbols-outlined text-sm">database</span> ${currentDb}`;
+            // Populate DB List
+            const databases = alasql('SHOW DATABASES');
+            dbSelector.innerHTML = '';
+            databases.forEach(db => {
+                const option = document.createElement('option');
+                option.value = db.databaseid;
+                option.text = db.databaseid;
+                if (db.databaseid === currentDb) option.selected = true;
+                dbSelector.appendChild(option);
+            });
+
             container.innerHTML = '';
 
             const tables = alasql(`SHOW TABLES FROM ${currentDb}`);
@@ -1061,6 +1144,16 @@ C, D -> E</textarea>
                 } catch(e) {
                     alert("Lỗi: " + e.message);
                 }
+            }
+        }
+        
+        function switchDB(dbName) {
+            try {
+                alasql(`USE ${dbName}`);
+                refreshSchemaViewer();
+                showToast(`Đã chuyển sang: ${dbName}`);
+            } catch(e) {
+                alert("Lỗi chuyển DB: " + e.message);
             }
         }
 
