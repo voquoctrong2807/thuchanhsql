@@ -59,23 +59,26 @@
 
         /* SQL Result Table Style */
         .sql-result-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-        .sql-result-table th { background-color: #f1f5f9; text-align: left; padding: 8px; border: 1px solid #e2e8f0; font-weight: 600; color: #475569; }
+        .sql-result-table th { background-color: #f1f5f9; text-align: left; padding: 8px; border: 1px solid #e2e8f0; font-weight: 600; color: #475569; position: sticky; top: 0; }
         .sql-result-table td { padding: 8px; border: 1px solid #e2e8f0; color: #334155; }
         .sql-result-table tr:nth-child(even) { background-color: #f8fafc; }
         .sql-result-table tr:hover { background-color: #f0f9ff; }
 
+        /* NEW FEATURES CSS */
+        .exercise-card { transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; }
+        .exercise-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+        .exercise-card.completed { border-color: #86efac; background-color: #f0fdf4; }
+        .badge-icon { background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
         /* --- PRINT CSS (TỐI ƯU CHO PDF) --- */
         @media print {
             @page { margin: 1.5cm; size: A4; }
             body { background: white !important; color: black !important; overflow: visible !important; height: auto !important; font-family: 'Inter', sans-serif; }
             
-            /* Ẩn các thành phần không cần thiết khi in */
-            /* Cập nhật: Thêm #demo và .ai-explanation-box vào danh sách ẩn */
-            #sidebar, .no-print, #ai-fab, #toast, .ai-btn, #chat-modal, #settings-modal, .mobile-header, .tab-buttons-container, #demo, .ai-explanation-box { 
+            #sidebar, .no-print, #ai-fab, #toast, .ai-btn, #chat-modal, #settings-modal, .mobile-header, .tab-buttons-container, #demo, .ai-explanation-box, #exercises-section, #theory-section { 
                 display: none !important; 
             }
 
-            /* Layout in ấn */
             #main-content { 
                 margin: 0 !important; 
                 padding: 0 !important; 
@@ -84,7 +87,6 @@
                 overflow: visible !important; 
             }
 
-            /* Bung tất cả các tab và nội dung ẩn */
             .content-section, .tab-content, .ddl-content, .dml-content, .hidden { 
                 display: block !important; 
                 opacity: 1 !important;
@@ -95,7 +97,6 @@
             .no-print { display: none !important; }
             .print\:block { display: block !important; }
 
-            /* Ngắt trang & Bố cục */
             .content-section { page-break-after: always; margin-bottom: 2cm; padding-bottom: 20px; border-bottom: 1px solid #eee; }
             .content-section:last-child { page-break-after: auto; border-bottom: none; }
             
@@ -104,11 +105,9 @@
                 page-break-inside: avoid;
             }
 
-            /* Giữ màu sắc */
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             .code-block { border: 1px solid #ccc !important; background-color: #f3f4f6 !important; color: #111 !important; box-shadow: none !important; }
             
-            /* Tiêu đề cho các phần tab bị ẩn nút bấm */
             .ddl-content::before, .dml-content::before {
                 content: attr(id); 
                 display: block;
@@ -123,14 +122,30 @@
         }
     </style>
 </head>
-<body class="h-screen flex overflow-hidden">
+<body class="h-screen flex overflow-hidden text-slate-800">
 
     <!-- SIDEBAR -->
     <aside id="sidebar" class="w-72 bg-white border-r border-slate-200 flex-col h-full hidden md:flex z-40 transition-all duration-300 shadow-xl md:shadow-none shrink-0">
-        <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+        <div class="p-6 border-b border-slate-100 flex flex-col gap-2 bg-slate-50">
             <h1 class="text-xl font-bold text-indigo-700 flex items-center gap-2">
                 <span class="material-symbols-outlined filled">database</span> SQL Master
             </h1>
+            <!-- NEW FEATURES START: Gamification Header -->
+            <div id="user-profile-mini" class="flex items-center gap-3 bg-white p-2 rounded-lg border border-slate-200 shadow-sm mt-2">
+                <div class="bg-indigo-100 p-2 rounded-full text-indigo-600">
+                    <span class="material-symbols-outlined text-lg">emoji_events</span>
+                </div>
+                <div class="flex-1">
+                    <div class="flex justify-between text-xs font-bold text-slate-700">
+                        <span>Level <span id="user-lvl">1</span></span>
+                        <span class="text-indigo-600"><span id="user-xp">0</span> XP</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-1.5 mt-1">
+                        <div id="xp-bar" class="bg-indigo-500 h-1.5 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+            <!-- NEW FEATURES END -->
         </div>
         <nav class="flex-1 overflow-y-auto p-4 space-y-1 custom-scroll">
             <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 mt-2 pl-2">1. Ngôn ngữ SQL</div>
@@ -157,6 +172,16 @@
             <button onclick="scrollToSection('decomposition')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-md text-sm transition-colors text-slate-600">
                 <span class="material-symbols-outlined text-lg">call_split</span> 2.3 Phân rã (PTT)
             </button>
+
+            <!-- NEW FEATURES START: New Menu Items -->
+            <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 mt-6 pl-2">3. Mở rộng</div>
+            <button onclick="scrollToSection('exercises-section')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-md text-sm transition-colors text-slate-600">
+                <span class="material-symbols-outlined text-lg">fitness_center</span> 3.1 Bài tập & Thử thách
+            </button>
+            <button onclick="scrollToSection('theory-section')" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-md text-sm transition-colors text-slate-600">
+                <span class="material-symbols-outlined text-lg">menu_book</span> 3.2 Lý thuyết & Ví dụ
+            </button>
+            <!-- NEW FEATURES END -->
         </nav>
         <div class="p-4 border-t border-slate-100 bg-slate-50 space-y-2 no-print">
             <button onclick="window.print()" class="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white text-sm font-medium py-2.5 px-4 rounded hover:bg-indigo-700 transition shadow-md mb-2">
@@ -182,13 +207,13 @@
             </div>
         </div>
 
-        <!-- 1.4 SQL LIVE DEMO SECTION -->
+        <!-- 1.4 SQL LIVE DEMO SECTION (Enhanced) -->
         <section id="demo" class="content-section max-w-6xl mx-auto mb-16 animate-fade-in block">
             <div class="flex items-center gap-3 mb-6 border-b border-slate-200 pb-4">
                 <div class="bg-indigo-600 text-white p-2 rounded-lg shadow-lg shadow-indigo-200"><span class="material-symbols-outlined">terminal</span></div>
                 <div>
                     <h2 class="text-2xl font-bold text-slate-800">1.4 SQL Live Demo (Thực hành)</h2>
-                    <p class="text-slate-500 text-sm">Chạy thử các câu lệnh SQL trực tiếp trên trình duyệt với dữ liệu mẫu hoặc CSDL của bạn.</p>
+                    <p class="text-slate-500 text-sm">Chạy thử các câu lệnh SQL trực tiếp trên trình duyệt.</p>
                 </div>
             </div>
 
@@ -196,8 +221,9 @@
                 
                 <!-- LEFT: Schema Viewer (Dynamic) -->
                 <div class="bg-white border border-slate-200 rounded-xl flex flex-col shadow-sm overflow-hidden">
-                    <!-- DB Control Header (UPDATED with Switcher) -->
+                    <!-- DB Control Header -->
                     <div class="p-3 bg-slate-50 border-b border-slate-200 text-sm flex flex-col gap-2">
+                        <!-- NEW FEATURES START: Dataset Selector -->
                         <div class="flex justify-between items-center bg-white border border-slate-200 rounded px-2 py-1">
                             <div class="flex items-center gap-2 flex-1 min-w-0">
                                 <span class="material-symbols-outlined text-indigo-600 text-sm shrink-0">database</span>
@@ -207,29 +233,47 @@
                             </div>
                         </div>
                         <div class="flex gap-1">
-                            <button onclick="createNewDB()" class="flex-1 bg-white border border-slate-300 rounded text-[10px] font-bold text-slate-600 py-1.5 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-300 transition flex items-center justify-center gap-1" title="Tạo CSDL Mới">
-                                <span class="material-symbols-outlined text-[12px]">add</span> Mới
-                            </button>
-                            <button onclick="triggerImport()" class="flex-1 bg-white border border-slate-300 rounded text-[10px] font-bold text-slate-600 py-1.5 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-300 transition flex items-center justify-center gap-1" title="Nhập file SQL">
-                                <span class="material-symbols-outlined text-[12px]">upload</span> Nhập
-                            </button>
-                            <button onclick="exportDB()" class="flex-1 bg-white border border-slate-300 rounded text-[10px] font-bold text-slate-600 py-1.5 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-300 transition flex items-center justify-center gap-1" title="Xuất file SQL">
-                                <span class="material-symbols-outlined text-[12px]">download</span> Xuất
-                            </button>
-                            <input type="file" id="import-file" class="hidden" accept=".sql" onchange="handleFileImport(this)">
+                            <select id="sample-dataset-selector" onchange="loadSampleDataset(this.value)" class="flex-1 bg-white border border-slate-300 rounded text-[10px] font-bold text-slate-600 py-1.5 px-1 hover:border-indigo-300 outline-none">
+                                <option value="" disabled selected>+ Mẫu Dữ Liệu</option>
+                                <option value="school">Trường Học (QlySV)</option>
+                                <option value="ecommerce">TMĐT (Ecom)</option>
+                                <option value="hr">Nhân Sự (HR)</option>
+                            </select>
+                            <button onclick="createNewDB()" class="bg-white border border-slate-300 rounded px-2 text-slate-600 hover:text-indigo-700" title="Tạo Mới"><span class="material-symbols-outlined text-[14px]">add</span></button>
+                            <button onclick="triggerImport()" class="bg-white border border-slate-300 rounded px-2 text-slate-600 hover:text-indigo-700" title="Import SQL/CSV"><span class="material-symbols-outlined text-[14px]">upload</span></button>
+                            <button onclick="exportDB()" class="bg-white border border-slate-300 rounded px-2 text-slate-600 hover:text-indigo-700" title="Export SQL"><span class="material-symbols-outlined text-[14px]">download</span></button>
+                            <input type="file" id="import-file" class="hidden" accept=".sql,.csv" onchange="handleFileImport(this)">
                         </div>
+                        <!-- NEW FEATURES END -->
                     </div>
                     
                     <!-- Dynamic Table List -->
                     <div id="schema-container" class="p-3 space-y-3 overflow-y-auto flex-1 custom-scroll">
                         <!-- Content will be injected by JS -->
                     </div>
+                    
+                    <!-- NEW FEATURES START: Mini Visualizer Button -->
+                    <button onclick="toggleVisualizer()" class="p-2 bg-indigo-50 text-indigo-700 text-xs font-bold border-t border-indigo-100 hover:bg-indigo-100 flex items-center justify-center gap-1">
+                        <span class="material-symbols-outlined text-sm">hub</span> Xem Sơ đồ Quan hệ (ERD)
+                    </button>
+                    <!-- NEW FEATURES END -->
                 </div>
 
                 <!-- RIGHT: Editor & Result -->
-                <div class="lg:col-span-2 flex flex-col gap-4 h-full">
+                <div class="lg:col-span-2 flex flex-col gap-4 h-full relative">
                     
-                    <!-- NEW: AI Demo Assistant -->
+                    <!-- Visualizer Overlay (NEW) -->
+                    <div id="erd-visualizer" class="hidden absolute inset-0 bg-white/95 z-20 backdrop-blur-sm rounded-xl border border-slate-200 p-6 overflow-auto animate-fade-in flex flex-col">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2"><span class="material-symbols-outlined">hub</span> Sơ đồ Quan hệ (ERD)</h3>
+                            <button onclick="toggleVisualizer()" class="p-1 hover:bg-slate-100 rounded"><span class="material-symbols-outlined">close</span></button>
+                        </div>
+                        <div id="erd-canvas" class="flex-1 border border-slate-200 rounded bg-slate-50 relative p-4 overflow-auto flex flex-wrap gap-8 items-start justify-center">
+                            <!-- Tables will be drawn here -->
+                        </div>
+                    </div>
+
+                    <!-- AI Demo Assistant -->
                     <div class="bg-gradient-to-r from-indigo-50 to-white p-4 rounded-xl border border-indigo-100 shadow-sm flex flex-col gap-3 relative overflow-hidden group no-print">
                         <div class="absolute top-0 right-0 w-16 h-16 bg-indigo-100 rounded-bl-full -mr-8 -mt-8 z-0 opacity-50"></div>
                         <div class="flex items-center gap-2 z-10">
@@ -242,7 +286,6 @@
                                 <span class="material-symbols-outlined text-sm">psychology</span> Tạo Code
                             </button>
                         </div>
-                        <!-- Result Area -->
                         <div id="demo-ai-result-container" class="hidden mt-1 z-10 animate-fade-in">
                             <div class="bg-slate-800 text-green-300 rounded-lg p-3 text-xs font-mono mb-2 relative border border-slate-700 shadow-inner">
                                 <div id="demo-ai-output" class="whitespace-pre-wrap"></div>
@@ -258,11 +301,20 @@
                         <div class="bg-slate-800 text-slate-300 px-4 py-2 text-xs flex justify-between items-center">
                             <span class="font-mono">SQL Query Editor</span>
                             <div class="flex gap-2">
-                                <button onclick="insertSampleQuery(`SELECT SV.HoTen, L.TenLop, MH.TenMH, KQ.Diem \nFROM SinhVien SV \nJOIN Lop L ON SV.MaLop = L.MaLop \nJOIN KetQua KQ ON SV.MaSV = KQ.MaSV \nJOIN MonHoc MH ON KQ.MaMH = MH.MaMH \nWHERE KQ.Diem >= 8.0`)" class="hover:text-white transition" title="Mẫu JOIN">JOIN</button>
-                                <button onclick="insertSampleQuery(`SELECT SV.MaLop, COUNT(SV.MaSV) as SoLuongSV \nFROM SinhVien SV \nGROUP BY SV.MaLop`)" class="hover:text-white transition" title="Mẫu Group By">GROUP BY</button>
+                                <!-- NEW FEATURES START: Hint Buttons -->
+                                <button onclick="explainCurrentQuery()" class="hover:text-white transition flex items-center gap-1" title="Giải thích ý nghĩa query"><span class="material-symbols-outlined text-[10px]">info</span> Giải thích</button>
+                                <button onclick="fixCurrentQuery()" class="hover:text-white transition flex items-center gap-1" title="Sửa lỗi syntax"><span class="material-symbols-outlined text-[10px]">build</span> Sửa lỗi</button>
+                                <!-- NEW FEATURES END -->
                             </div>
                         </div>
                         <textarea id="sql-editor" class="flex-1 w-full p-4 bg-[#1e1e1e] text-indigo-100 font-mono text-sm outline-none resize-none leading-relaxed" spellcheck="false">SELECT * FROM SinhVien WHERE GioiTinh = 'Nu'</textarea>
+                        
+                        <!-- NEW FEATURES START: Share Button -->
+                        <div class="absolute bottom-4 left-4 flex gap-2 z-10">
+                             <button onclick="shareQuery()" class="bg-slate-700/50 hover:bg-slate-700 text-white p-2 rounded text-xs backdrop-blur-sm transition" title="Chia sẻ Query"><span class="material-symbols-outlined text-sm">share</span></button>
+                        </div>
+                        <!-- NEW FEATURES END -->
+
                         <button onclick="runDemoQuery()" class="absolute bottom-4 right-4 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded shadow-lg font-bold text-sm flex items-center gap-2 transition transform active:scale-95 z-10">
                             <span class="material-symbols-outlined text-lg">play_arrow</span> Run Query
                         </button>
@@ -270,9 +322,16 @@
 
                     <!-- Result -->
                     <div class="h-64 bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col overflow-hidden">
-                        <div class="bg-slate-50 border-b border-slate-200 px-4 py-2 text-xs font-bold text-slate-600 flex justify-between">
+                        <div class="bg-slate-50 border-b border-slate-200 px-4 py-2 text-xs font-bold text-slate-600 flex justify-between items-center">
                             <span>Kết quả truy vấn</span>
-                            <span id="row-count" class="text-indigo-600">0 dòng</span>
+                            <div class="flex gap-2">
+                                <!-- NEW FEATURES START: Export Data Buttons -->
+                                <button onclick="exportData('csv')" class="text-indigo-600 hover:underline">CSV</button>
+                                <button onclick="exportData('json')" class="text-indigo-600 hover:underline">JSON</button>
+                                <!-- NEW FEATURES END -->
+                                <span class="text-slate-300">|</span>
+                                <span id="row-count" class="text-indigo-600">0 dòng</span>
+                            </div>
                         </div>
                         <div class="overflow-auto flex-1 p-0 custom-scroll relative" id="query-result-container">
                             <div class="flex flex-col items-center justify-center h-full text-slate-400 text-sm italic">
@@ -284,6 +343,85 @@
                 </div>
             </div>
         </section>
+
+        <!-- NEW FEATURES START: 3.1 Exercises Section -->
+        <section id="exercises-section" class="content-section max-w-6xl mx-auto mb-16 animate-fade-in hidden">
+            <div class="flex items-center gap-3 mb-6 border-b border-slate-200 pb-4">
+                <div class="bg-indigo-600 text-white p-2 rounded-lg shadow-lg"><span class="material-symbols-outlined">fitness_center</span></div>
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800">3.1 Bài Tập & Thử Thách SQL</h2>
+                    <p class="text-slate-500 text-sm">Luyện tập kỹ năng với các bài toán thực tế. Hệ thống chấm điểm tự động.</p>
+                </div>
+            </div>
+
+            <div class="grid lg:grid-cols-4 gap-6">
+                <!-- Topic/Level Sidebar -->
+                <div class="bg-white border border-slate-200 rounded-xl overflow-hidden h-[calc(100vh-250px)] flex flex-col">
+                    <div class="p-3 bg-slate-50 font-bold text-slate-700 text-sm border-b border-slate-200">Danh sách bài tập</div>
+                    <div class="p-2 overflow-y-auto flex-1 custom-scroll" id="exercise-list">
+                        <!-- Populated via JS -->
+                    </div>
+                </div>
+
+                <!-- Exercise Area -->
+                <div class="lg:col-span-3 flex flex-col gap-4">
+                    <div id="exercise-workspace" class="hidden h-full flex flex-col gap-4">
+                        <!-- Problem Description -->
+                        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 id="ex-title" class="text-xl font-bold text-slate-800">Tiêu đề bài tập</h3>
+                                <span id="ex-difficulty" class="px-2 py-1 rounded text-xs font-bold uppercase bg-green-100 text-green-700">Easy</span>
+                            </div>
+                            <p id="ex-desc" class="text-slate-600 text-sm leading-relaxed mb-4">Mô tả yêu cầu...</p>
+                            <div class="text-xs text-slate-500 font-mono bg-slate-50 p-2 rounded border border-slate-100">
+                                <strong>Gợi ý bảng:</strong> <span id="ex-tables">SinhVien, Lop</span>
+                            </div>
+                        </div>
+
+                        <!-- Editor -->
+                        <div class="flex-1 bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col overflow-hidden">
+                            <div class="bg-slate-800 text-slate-300 px-4 py-2 text-xs flex justify-between">
+                                <span>Lời giải của bạn</span>
+                            </div>
+                            <textarea id="ex-editor" class="flex-1 w-full p-4 bg-[#1e1e1e] text-indigo-100 font-mono text-sm outline-none resize-none" rows="6"></textarea>
+                            <div class="bg-slate-50 p-2 flex justify-between items-center border-t border-slate-200">
+                                <div id="ex-feedback" class="text-sm font-bold px-2"></div>
+                                <button onclick="checkExercise()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded font-bold text-sm shadow flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-lg">check_circle</span> Chấm Bài
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Result Preview -->
+                        <div class="h-48 bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col overflow-hidden">
+                            <div class="bg-slate-50 px-4 py-2 text-xs font-bold text-slate-600 border-b border-slate-200">Kết quả chạy thử</div>
+                            <div id="ex-result" class="overflow-auto p-0 custom-scroll h-full"></div>
+                        </div>
+                    </div>
+                    
+                    <div id="exercise-empty-state" class="h-full flex flex-col items-center justify-center text-slate-400">
+                        <span class="material-symbols-outlined text-6xl mb-4 opacity-20">assignment</span>
+                        <p>Chọn một bài tập bên trái để bắt đầu</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- NEW FEATURES START: 3.2 Theory Section -->
+        <section id="theory-section" class="content-section max-w-4xl mx-auto mb-16 animate-fade-in hidden">
+            <div class="flex items-center gap-3 mb-6 border-b border-slate-200 pb-4">
+                <div class="bg-indigo-600 text-white p-2 rounded-lg shadow-lg"><span class="material-symbols-outlined">menu_book</span></div>
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800">3.2 Lý Thuyết & Ví Dụ</h2>
+                    <p class="text-slate-500 text-sm">Tra cứu nhanh cú pháp và chạy thử ví dụ.</p>
+                </div>
+            </div>
+            
+            <div class="space-y-6" id="theory-content">
+                <!-- Populated via JS -->
+            </div>
+        </section>
+        <!-- NEW FEATURES END -->
 
         <!-- 1.1 DDL SECTION (Original) -->
         <section id="ddl" class="content-section max-w-5xl mx-auto mb-16 animate-fade-in hidden">
@@ -860,6 +998,90 @@ C, D -> E</textarea>
 
     <!-- Logic Script -->
     <script>
+        // --- NEW FEATURES START: GLOBAL DATA & STATE ---
+        const USER_STATE = {
+            level: 1,
+            xp: 0,
+            completedExercises: []
+        };
+
+        const DATASETS = {
+            school: {
+                name: 'Trường Học (QlySV)',
+                initSQL: [
+                    "CREATE TABLE IF NOT EXISTS Lop (MaLop STRING, TenLop STRING)",
+                    "CREATE TABLE IF NOT EXISTS SinhVien (MaSV STRING, HoTen STRING, NgaySinh DATE, GioiTinh STRING, MaLop STRING)",
+                    "INSERT INTO Lop VALUES ('L01', 'CNTT K15'), ('L02', 'Kinh Te K15')",
+                    "INSERT INTO SinhVien VALUES ('SV01', 'Nguyen Van An', '2003-01-01', 'Nam', 'L01'), ('SV02', 'Tran Thi Binh', '2003-05-12', 'Nu', 'L01')"
+                ]
+            },
+            ecommerce: {
+                name: 'TMĐT (Ecom)',
+                initSQL: [
+                    "CREATE TABLE IF NOT EXISTS Users (ID INT, Name STRING, Country STRING)",
+                    "CREATE TABLE IF NOT EXISTS Orders (OrderID INT, UserID INT, Amount FLOAT, OrderDate DATE)",
+                    "INSERT INTO Users VALUES (1, 'Alice', 'USA'), (2, 'Bob', 'UK'), (3, 'Charlie', 'USA')",
+                    "INSERT INTO Orders VALUES (101, 1, 50.0, '2023-01-01'), (102, 1, 120.5, '2023-02-15'), (103, 2, 20.0, '2023-03-10')"
+                ]
+            },
+            hr: {
+                name: 'Nhân Sự (HR)',
+                initSQL: [
+                    "CREATE TABLE IF NOT EXISTS Employees (EmpID INT, Name STRING, DeptID INT, Salary INT)",
+                    "CREATE TABLE IF NOT EXISTS Departments (DeptID INT, DeptName STRING)",
+                    "INSERT INTO Departments VALUES (1, 'IT'), (2, 'HR'), (3, 'Sales')",
+                    "INSERT INTO Employees VALUES (1, 'John Doe', 1, 5000), (2, 'Jane Smith', 1, 6000), (3, 'Mike Ross', 2, 4500)"
+                ]
+            }
+        };
+
+        const EXERCISES = [
+            {
+                id: 'ex1',
+                title: 'Lấy tất cả sinh viên',
+                level: 'Basic',
+                desc: 'Viết câu lệnh SQL để lấy tất cả các cột từ bảng <code>SinhVien</code>.',
+                dataset: 'school',
+                check: (res) => res.length >= 2 && Object.keys(res[0]).includes('HoTen'),
+                solution: "SELECT * FROM SinhVien"
+            },
+            {
+                id: 'ex2',
+                title: 'Lọc sinh viên nữ',
+                level: 'Basic',
+                desc: 'Lấy danh sách các sinh viên có giới tính là "Nu".',
+                dataset: 'school',
+                check: (res) => res.every(r => r.GioiTinh === 'Nu'),
+                solution: "SELECT * FROM SinhVien WHERE GioiTinh = 'Nu'"
+            },
+            {
+                id: 'ex3',
+                title: 'Tổng chi tiêu theo User',
+                level: 'Intermediate',
+                desc: 'Tính tổng số tiền (Amount) mỗi User đã mua từ bảng <code>Orders</code>. Kết quả gồm UserID và TotalAmount.',
+                dataset: 'ecommerce',
+                check: (res) => res.length > 0 && res[0].TotalAmount,
+                solution: "SELECT UserID, SUM(Amount) as TotalAmount FROM Orders GROUP BY UserID"
+            },
+            {
+                id: 'ex4',
+                title: 'Nhân viên lương cao',
+                level: 'Intermediate',
+                desc: 'Tìm tên nhân viên (Name) và lương (Salary) của những người có lương > 5000.',
+                dataset: 'hr',
+                check: (res) => res.length > 0 && res.every(r => r.Salary > 5000),
+                solution: "SELECT Name, Salary FROM Employees WHERE Salary > 5000"
+            }
+        ];
+
+        const THEORY_DATA = [
+            { title: "SELECT cơ bản", content: "Dùng để lấy dữ liệu.", code: "SELECT * FROM TenBang" },
+            { title: "WHERE (Lọc)", content: "Lọc dòng theo điều kiện.", code: "SELECT * FROM TenBang WHERE Cot > 10" },
+            { title: "JOIN (Kết nối)", content: "Kết hợp 2 bảng.", code: "SELECT * FROM A JOIN B ON A.id = B.id" },
+            { title: "GROUP BY (Gom nhóm)", content: "Gom nhóm dữ liệu.", code: "SELECT Cot, COUNT(*) FROM Bang GROUP BY Cot" }
+        ];
+        // --- NEW FEATURES END ---
+
         // --- UI ---
         function scrollToSection(id) {
             document.querySelectorAll('.content-section').forEach(sec => sec.classList.add('hidden'));
@@ -1038,17 +1260,21 @@ Return ONLY the SQL code block. No explanation.
 
         // --- SQL DEMO ENGINE (AlaSQL) ---
         function initSQLDemo() {
-            // Create Database & Tables
+            // Check if databases exist, if not create default
+            // AlaSQL is in-memory mostly unless persistence plugin used (not here)
+            // But we can simulate persistence by checking if our tables exist
+            
+            // Default DB
             alasql("CREATE DATABASE IF NOT EXISTS qlysinhvien");
             alasql("USE qlysinhvien");
+            
+            if (alasql("SHOW TABLES FROM qlysinhvien").length === 0) {
+                // Populate default if empty
+                alasql("CREATE TABLE Lop (MaLop STRING, TenLop STRING)");
+                alasql("CREATE TABLE SinhVien (MaSV STRING, HoTen STRING, NgaySinh DATE, GioiTinh STRING, MaLop STRING)");
+                alasql("CREATE TABLE MonHoc (MaMH STRING, TenMH STRING, SoTinChi INT)");
+                alasql("CREATE TABLE KetQua (MaSV STRING, MaMH STRING, Diem FLOAT)");
 
-            alasql("CREATE TABLE IF NOT EXISTS Lop (MaLop STRING, TenLop STRING)");
-            alasql("CREATE TABLE IF NOT EXISTS SinhVien (MaSV STRING, HoTen STRING, NgaySinh DATE, GioiTinh STRING, MaLop STRING)");
-            alasql("CREATE TABLE IF NOT EXISTS MonHoc (MaMH STRING, TenMH STRING, SoTinChi INT)");
-            alasql("CREATE TABLE IF NOT EXISTS KetQua (MaSV STRING, MaMH STRING, Diem FLOAT)");
-
-            // Check if data exists before inserting to avoid duplicates on re-run
-            if (alasql("SELECT COUNT(*) as cnt FROM Lop")[0].cnt == 0) {
                 alasql("INSERT INTO Lop VALUES ('L01', 'CNTT K15'), ('L02', 'Kinh Te K15'), ('L03', 'Ngon Ngu Anh')");
                 alasql("INSERT INTO SinhVien VALUES ('SV01', 'Nguyen Van An', '2003-01-01', 'Nam', 'L01')");
                 alasql("INSERT INTO SinhVien VALUES ('SV02', 'Tran Thi Binh', '2003-05-12', 'Nu', 'L01')");
@@ -1062,7 +1288,11 @@ Return ONLY the SQL code block. No explanation.
                 alasql("INSERT INTO KetQua VALUES ('SV04', 'MH01', 9.5), ('SV04', 'MH03', 9.0)");
                 alasql("INSERT INTO KetQua VALUES ('SV05', 'MH01', 4.0), ('SV05', 'MH02', 5.0)");
             }
+            
             refreshSchemaViewer();
+            loadUserData();
+            initExercises();
+            initTheory();
         }
 
         function refreshSchemaViewer() {
@@ -1092,7 +1322,6 @@ Return ONLY the SQL code block. No explanation.
 
             tables.forEach(t => {
                 const tableName = t.tableid;
-                // AlaSQL SHOW COLUMNS returns array of column info
                 const cols = alasql(`SHOW COLUMNS FROM ${tableName}`);
                 
                 let colsHtml = '';
@@ -1131,7 +1360,6 @@ Return ONLY the SQL code block. No explanation.
             const name = prompt("Nhập tên CSDL mới (viết liền, không dấu):", "new_db");
             if (name) {
                 try {
-                    // Sanitize name simple check
                     if(/[^a-zA-Z0-9_]/.test(name)) {
                         alert("Tên CSDL chỉ được chứa chữ cái, số và dấu gạch dưới.");
                         return;
@@ -1166,14 +1394,32 @@ Return ONLY the SQL code block. No explanation.
             if (!file) return;
             const reader = new FileReader();
             reader.onload = function(e) {
-                const sql = e.target.result;
+                const content = e.target.result;
                 try {
-                    // Try to detect if USE statement exists, otherwise execute on current DB
-                    // AlaSQL handles multiple statements if separated by semicolon
-                    alasql(sql); 
-                    refreshSchemaViewer();
-                    showToast("Đã nhập dữ liệu thành công!");
-                    document.getElementById('row-count').innerText = "Import xong";
+                    if(file.name.endsWith('.sql')) {
+                        alasql(content); 
+                        refreshSchemaViewer();
+                        showToast("Đã nhập SQL thành công!");
+                    } else if(file.name.endsWith('.csv')) {
+                        const tableName = prompt("Nhập tên bảng để lưu dữ liệu CSV:", "ImportTable");
+                        if(tableName) {
+                            // Simple CSV parsing assuming header row
+                            const rows = content.split('\n').filter(r=>r.trim());
+                            if(rows.length > 0) {
+                                const headers = rows[0].split(',');
+                                // Create table dynamically
+                                const createSql = `CREATE TABLE ${tableName} (${headers.map(h=>h.trim() + ' STRING').join(', ')})`;
+                                alasql(createSql);
+                                // Insert data
+                                for(let i=1; i<rows.length; i++) {
+                                    const vals = rows[i].split(',').map(v=>`'${v.trim()}'`).join(',');
+                                    alasql(`INSERT INTO ${tableName} VALUES (${vals})`);
+                                }
+                                refreshSchemaViewer();
+                                showToast("Đã nhập CSV thành công!");
+                            }
+                        }
+                    }
                     document.getElementById('query-result-container').innerHTML = '<div class="p-4 text-green-600 font-mono text-sm">Dữ liệu đã được nạp vào hệ thống.</div>';
                 } catch(err) {
                     alert("Lỗi nhập file: " + err.message);
@@ -1191,19 +1437,12 @@ Return ONLY the SQL code block. No explanation.
             
             tables.forEach(t => {
                 const tableName = t.tableid;
-                
-                // 1. Create Table (Simplified reconstruction)
                 const cols = alasql.databases[currentDb].tables[tableName].columns; 
                 if(cols && cols.length > 0) {
                      const colDefs = cols.map(c => `${c.columnid} ${c.dbtypeid || 'STRING'}`).join(', ');
                      sql += `CREATE TABLE IF NOT EXISTS ${tableName} (${colDefs});\n`;
-                } else {
-                     // If defined without columns (standard AlaSQL behavior allowing schemaless)
-                     // We try to infer or just skip CREATE for now, but usually for SQL export we need it.
-                     // We'll skip precise CREATE if no metadata found.
                 }
 
-                // 2. Insert Data
                 const data = alasql(`SELECT * FROM ${tableName}`);
                 if (data.length > 0) {
                     data.forEach(row => {
@@ -1233,33 +1472,25 @@ Return ONLY the SQL code block. No explanation.
             try {
                 const res = alasql(query);
                 
-                // If the query was a CREATE/INSERT/UPDATE/USE, refreshes might be needed
-                if(query.toUpperCase().includes('CREATE') || query.toUpperCase().includes('DROP') || query.toUpperCase().includes('USE')) {
+                if(query.toUpperCase().includes('CREATE') || query.toUpperCase().includes('DROP') || query.toUpperCase().includes('USE') || query.toUpperCase().includes('INSERT') || query.toUpperCase().includes('UPDATE') || query.toUpperCase().includes('DELETE')) {
                     refreshSchemaViewer();
                 }
 
-                // Handle empty result or non-array result
-                if (!res || !Array.isArray(res)) {
-                    resContainer.innerHTML = '<div class="p-4 text-green-600 font-mono text-sm">Query executed successfully (No Rows Returned).</div>';
-                    rowCount.innerText = "0 dòng";
-                    return;
+                // Handling multiple statements
+                let dataToRender = res;
+                if (Array.isArray(res) && res.length > 0 && Array.isArray(res[0])) {
+                    dataToRender = res[res.length - 1]; 
                 }
 
-                if (res.length === 0) {
-                     resContainer.innerHTML = '<div class="p-4 text-slate-500 font-mono text-sm italic">Không tìm thấy dữ liệu phù hợp.</div>';
-                     rowCount.innerText = "0 dòng";
+                if (!Array.isArray(dataToRender)) {
+                     resContainer.innerHTML = '<div class="p-4 text-green-600 font-mono text-sm">Query executed successfully.</div>';
+                     rowCount.innerText = "-";
                      return;
                 }
 
-                // Handle AlaSQL multiple statements result (returns array of arrays)
-                let dataToRender = res;
-                if (Array.isArray(res[0])) {
-                    dataToRender = res[res.length - 1]; // Show last result
-                }
-
-                if (!Array.isArray(dataToRender) || dataToRender.length === 0) {
-                     resContainer.innerHTML = '<div class="p-4 text-green-600 font-mono text-sm">Command Executed.</div>';
-                     rowCount.innerText = "-";
+                if (dataToRender.length === 0) {
+                     resContainer.innerHTML = '<div class="p-4 text-slate-500 font-mono text-sm italic">Query returned 0 rows.</div>';
+                     rowCount.innerText = "0 dòng";
                      return;
                 }
 
@@ -1289,6 +1520,278 @@ Return ONLY the SQL code block. No explanation.
             document.getElementById('sql-editor').value = q;
             runDemoQuery();
         }
+
+        // --- NEW FEATURES START: LOGIC IMPLEMENTATION ---
+
+        // 1. DATASET LOADER
+        function loadSampleDataset(key) {
+            const ds = DATASETS[key];
+            if(!ds) return;
+            
+            const dbName = key + '_db';
+            try {
+                // Fix for "Database already exists" error
+                // Instead of CREATE IF NOT EXISTS, we DROP and RECREATE to ensure clean state for exercises
+                
+                // 1. Switch to a temp DB or default to avoid locking the one we drop (if needed, though AlaSQL is permissive)
+                // We'll just try to drop.
+                alasql(`DROP DATABASE IF EXISTS ${dbName}`);
+                alasql(`CREATE DATABASE ${dbName}`);
+                alasql(`USE ${dbName}`);
+                
+                // 2. Initialize Data
+                ds.initSQL.forEach(q => alasql(q));
+                
+                refreshSchemaViewer();
+                showToast(`Đã tải bộ dữ liệu: ${ds.name}`);
+                
+                // Switch select to this DB
+                document.getElementById('db-selector').value = dbName;
+            } catch(e) {
+                console.error(e);
+                alert("Lỗi tải dataset: " + e.message);
+            }
+        }
+
+        // 2. EXERCISES
+        function initExercises() {
+            const listEl = document.getElementById('exercise-list');
+            listEl.innerHTML = '';
+            
+            EXERCISES.forEach((ex, idx) => {
+                const isCompleted = USER_STATE.completedExercises.includes(ex.id);
+                const el = document.createElement('div');
+                el.className = `p-3 m-1 rounded border border-slate-100 exercise-card ${isCompleted ? 'completed' : 'bg-white'}`;
+                el.onclick = () => loadExercise(idx);
+                el.innerHTML = `
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-xs font-bold text-slate-500 uppercase">${ex.level}</span>
+                        ${isCompleted ? '<span class="material-symbols-outlined text-green-500 text-sm">check_circle</span>' : ''}
+                    </div>
+                    <div class="font-bold text-sm text-slate-700">${ex.title}</div>
+                `;
+                listEl.appendChild(el);
+            });
+        }
+
+        let currentExerciseIdx = -1;
+
+        function loadExercise(idx) {
+            currentExerciseIdx = idx;
+            const ex = EXERCISES[idx];
+            
+            document.getElementById('exercise-workspace').classList.remove('hidden');
+            document.getElementById('exercise-empty-state').classList.add('hidden');
+            
+            document.getElementById('ex-title').innerText = ex.title;
+            document.getElementById('ex-difficulty').innerText = ex.level;
+            document.getElementById('ex-desc').innerHTML = ex.desc;
+            document.getElementById('ex-editor').value = '';
+            document.getElementById('ex-result').innerHTML = '';
+            document.getElementById('ex-feedback').innerHTML = '';
+            
+            // Auto load required dataset
+            loadSampleDataset(ex.dataset);
+        }
+
+        function checkExercise() {
+            if(currentExerciseIdx === -1) return;
+            const ex = EXERCISES[currentExerciseIdx];
+            const userSql = document.getElementById('ex-editor').value;
+            const feedbackEl = document.getElementById('ex-feedback');
+            const resultEl = document.getElementById('ex-result');
+
+            try {
+                const res = alasql(userSql);
+                
+                // Show user result
+                let html = '<table class="sql-result-table"><thead><tr>';
+                if(res.length > 0) Object.keys(res[0]).forEach(c => html += `<th>${c}</th>`);
+                html += '</tr></thead><tbody>';
+                res.forEach(row => {
+                    html += '<tr>';
+                    Object.values(row).forEach(v => html += `<td>${v}</td>`);
+                    html += '</tr>';
+                });
+                html += '</tbody></table>';
+                resultEl.innerHTML = html;
+
+                // Check logic
+                if(ex.check(res)) {
+                    feedbackEl.innerHTML = '<span class="text-green-600">🎉 Chính xác! +10 XP</span>';
+                    if(!USER_STATE.completedExercises.includes(ex.id)) {
+                        USER_STATE.completedExercises.push(ex.id);
+                        addXP(10);
+                        saveUserData();
+                        initExercises(); // Refresh UI
+                    }
+                } else {
+                    feedbackEl.innerHTML = '<span class="text-red-600">🤔 Chưa đúng. Hãy kiểm tra lại.</span>';
+                }
+
+            } catch(e) {
+                feedbackEl.innerHTML = `<span class="text-red-600">Lỗi cú pháp: ${e.message}</span>`;
+            }
+        }
+
+        // 3. GAMIFICATION (XP & PROFILE)
+        function loadUserData() {
+            const saved = localStorage.getItem('sql_master_user');
+            if(saved) {
+                const parsed = JSON.parse(saved);
+                USER_STATE.level = parsed.level || 1;
+                USER_STATE.xp = parsed.xp || 0;
+                USER_STATE.completedExercises = parsed.completedExercises || [];
+            }
+            updateProfileUI();
+        }
+
+        function saveUserData() {
+            localStorage.setItem('sql_master_user', JSON.stringify(USER_STATE));
+            updateProfileUI();
+        }
+
+        function addXP(amount) {
+            USER_STATE.xp += amount;
+            // Simple level up logic: Level = 1 + floor(XP / 100)
+            const newLevel = 1 + Math.floor(USER_STATE.xp / 100);
+            if(newLevel > USER_STATE.level) {
+                showToast(`Thăng cấp! Bạn đã đạt Level ${newLevel}`);
+                USER_STATE.level = newLevel;
+            }
+        }
+
+        function updateProfileUI() {
+            document.getElementById('user-lvl').innerText = USER_STATE.level;
+            document.getElementById('user-xp').innerText = USER_STATE.xp;
+            const progress = (USER_STATE.xp % 100); 
+            document.getElementById('xp-bar').style.width = `${progress}%`;
+        }
+
+        // 4. HINTS & EXPLAIN
+        function explainCurrentQuery() {
+            const sql = document.getElementById('sql-editor').value;
+            // Basic naive parser explanation
+            let explanation = "<b>Giải thích Query:</b><br>";
+            if(sql.toUpperCase().includes('SELECT')) explanation += "- <b>SELECT</b>: Chọn các cột dữ liệu.<br>";
+            if(sql.toUpperCase().includes('FROM')) explanation += "- <b>FROM</b>: Từ bảng nguồn.<br>";
+            if(sql.toUpperCase().includes('WHERE')) explanation += "- <b>WHERE</b>: Lọc dữ liệu theo điều kiện.<br>";
+            if(sql.toUpperCase().includes('JOIN')) explanation += "- <b>JOIN</b>: Kết hợp với bảng khác.<br>";
+            
+            showToast("Đã hiện giải thích (xem console hoặc popup nếu cần - simplified)");
+            // In a real app we'd show a modal, here we use the AI box logic if available or just alert
+            alert(explanation.replace(/<br>/g, '\n').replace(/<b>/g,'').replace(/<\/b>/g,''));
+        }
+
+        function fixCurrentQuery() {
+            // Simple heuristics
+            let sql = document.getElementById('sql-editor').value;
+            let suggestion = "";
+            if(!sql.toUpperCase().includes('FROM')) suggestion = "Thiếu mệnh đề FROM.";
+            else if(sql.includes("==")) suggestion = "Trong SQL so sánh bằng dùng '=', không dùng '=='.";
+            
+            if(suggestion) alert("Gợi ý: " + suggestion);
+            else alert("Cú pháp có vẻ ổn về mặt cơ bản. Nếu lỗi, hãy kiểm tra tên bảng/cột.");
+        }
+
+        // 5. VISUALIZER (ERD)
+        function toggleVisualizer() {
+            const el = document.getElementById('erd-visualizer');
+            el.classList.toggle('hidden');
+            if(!el.classList.contains('hidden')) drawERD();
+        }
+
+        function drawERD() {
+            const canvas = document.getElementById('erd-canvas');
+            canvas.innerHTML = '';
+            const tables = alasql(`SHOW TABLES FROM ${alasql.useid}`);
+            
+            tables.forEach(t => {
+                const tableName = t.tableid;
+                const cols = alasql(`SHOW COLUMNS FROM ${tableName}`);
+                
+                const tableCard = document.createElement('div');
+                tableCard.className = 'bg-white border-2 border-slate-300 rounded shadow-sm w-48 text-sm';
+                
+                let rowsHtml = '';
+                cols.forEach(c => {
+                    const isPK = c.columnid.toLowerCase().includes('id') || c.columnid.toLowerCase().startsWith('ma');
+                    rowsHtml += `
+                        <div class="px-2 py-1 border-b border-slate-100 flex justify-between items-center ${isPK ? 'bg-yellow-50 font-bold' : ''}">
+                            <span>${c.columnid}</span>
+                            <span class="text-[10px] text-slate-400">${c.dbtypeid || ''}</span>
+                        </div>`;
+                });
+
+                tableCard.innerHTML = `
+                    <div class="bg-indigo-100 px-2 py-1 font-bold text-indigo-800 text-center border-b border-indigo-200">${tableName}</div>
+                    ${rowsHtml}
+                `;
+                canvas.appendChild(tableCard);
+            });
+        }
+
+        // 6. EXPORT / SHARE
+        function exportData(type) {
+            const sql = document.getElementById('sql-editor').value;
+            try {
+                const res = alasql(sql);
+                if(!res || res.length === 0) { alert("Không có dữ liệu để xuất."); return; }
+                
+                let content = "";
+                if(type === 'json') {
+                    content = JSON.stringify(res, null, 2);
+                } else {
+                    const header = Object.keys(res[0]).join(",");
+                    const rows = res.map(r => Object.values(r).join(",")).join("\n");
+                    content = header + "\n" + rows;
+                }
+                
+                const blob = new Blob([content], {type: 'text/plain'});
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = `export.${type}`;
+                a.click();
+            } catch(e) { alert("Lỗi khi xuất: " + e.message); }
+        }
+
+        function shareQuery() {
+            const sql = document.getElementById('sql-editor').value;
+            const url = new URL(window.location);
+            url.searchParams.set('q', encodeURIComponent(sql));
+            // In a real server env we would shorten this
+            navigator.clipboard.writeText(url.toString());
+            showToast("Đã copy link chia sẻ (kèm query)!");
+        }
+
+        // 7. THEORY
+        function initTheory() {
+            const container = document.getElementById('theory-content');
+            container.innerHTML = '';
+            THEORY_DATA.forEach(item => {
+                container.innerHTML += `
+                    <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+                        <h4 class="font-bold text-indigo-700 mb-1">${item.title}</h4>
+                        <p class="text-sm text-slate-600 mb-2">${item.content}</p>
+                        <div class="bg-slate-800 text-green-300 p-2 rounded text-xs font-mono mb-2">${item.code}</div>
+                        <button onclick="insertSampleQuery('${item.code}')" class="text-xs bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded text-slate-600 font-bold">Chạy thử ngay</button>
+                    </div>
+                `;
+            });
+        }
+
+        // Check for shared query on load
+        window.onload = function() {
+            const params = new URLSearchParams(window.location.search);
+            const sharedQ = params.get('q');
+            if(sharedQ) {
+                document.getElementById('sql-editor').value = decodeURIComponent(sharedQ);
+                // Switch to demo tab automatically
+                scrollToSection('demo');
+            }
+        }
+
+        // --- NEW FEATURES END ---
 
         document.addEventListener('DOMContentLoaded', () => {
             scrollToSection('ddl');
