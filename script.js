@@ -761,24 +761,75 @@ async function explainCode(codeId, explainId, customPrompt) {
 
 async function callGemini(prompt) {
     const key = localStorage.getItem('gemini_api_key');
-    if(!key) { openSettings(); return null; }
+    if(!key) { 
+        openSettings(); 
+        return null; 
+    }
     
     // Cache check
-    const cacheKey = 'ai_cache_' + btoa(prompt).slice(0, 50);
+    const cacheKey = 'ai_cache_' + btoa(unescape(encodeURIComponent(prompt))).slice(0, 50);
     const cached = localStorage.getItem(cacheKey);
     if(cached) return cached;
 
+    // Get model from settings or use default
+    const modelSetting = localStorage.getItem('sql_master_aiModel') || 'gemini_flash';
+    const modelMap = {
+        'gemini_flash': 'gemini-2.0-flash',
+        'gemini_pro': 'gemini-1.5-pro',
+        'gemini_lite': 'gemini-1.5-flash'
+    };
+    const model = modelMap[modelSetting] || 'gemini-2.0-flash';
+
     try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${key}`, {
+        // Add timeout to prevent hanging forever
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+        
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+            signal: controller.signal
         });
+        
+        clearTimeout(timeoutId);
+        
+        // Check for HTTP errors
+        if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            const errorMsg = errorData.error?.message || `HTTP ${res.status}`;
+            console.error('Gemini API Error:', errorMsg);
+            return `Lỗi API: ${errorMsg}`;
+        }
+        
         const data = await res.json();
+        
+        // Check for API-level errors
+        if (data.error) {
+            console.error('Gemini Error:', data.error);
+            return `Lỗi: ${data.error.message || 'Unknown error'}`;
+        }
+        
         const txt = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if(txt) localStorage.setItem(cacheKey, txt);
-        return txt;
-    } catch(e) { return "Lỗi kết nối AI."; }
+        if(txt) {
+            localStorage.setItem(cacheKey, txt);
+            return txt;
+        }
+        
+        // Handle blocked content or empty response
+        if (data.candidates?.[0]?.finishReason === 'SAFETY') {
+            return "Nội dung bị chặn bởi bộ lọc an toàn của AI.";
+        }
+        
+        return "AI không trả về kết quả. Vui lòng thử lại.";
+        
+    } catch(e) { 
+        if (e.name === 'AbortError') {
+            return "Hết thời gian chờ (30s). Vui lòng thử lại.";
+        }
+        console.error('Gemini fetch error:', e);
+        return `Lỗi kết nối: ${e.message}`; 
+    }
 }
 
 async function askAIExplain(topic) {
@@ -1199,17 +1250,35 @@ async function testAIConnection() {
     
     showToast('Đang kiểm tra kết nối...');
     
+    // Get model from settings
+    const modelSetting = localStorage.getItem('sql_master_aiModel') || 'gemini_flash';
+    const modelMap = {
+        'gemini_flash': 'gemini-2.0-flash',
+        'gemini_pro': 'gemini-1.5-pro',
+        'gemini_lite': 'gemini-1.5-flash'
+    };
+    const model = modelMap[modelSetting] || 'gemini-2.0-flash';
+    
     try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`, {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ contents: [{ parts: [{ text: 'ping' }] }] })
+            body: JSON.stringify({ contents: [{ parts: [{ text: 'Xin chào' }] }] })
         });
         
         if (res.ok) {
-            showToast('✓ Kết nối AI thành công!');
+            const data = await res.json();
+            if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
+                showToast(`✓ Kết nối AI thành công! (${model})`);
+            } else if (data.error) {
+                showToast(`✗ Lỗi API: ${data.error.message}`);
+            } else {
+                showToast('✓ Kết nối OK nhưng không có phản hồi');
+            }
         } else {
-            showToast('✗ Không kết nối được AI, kiểm tra API Key');
+            const errorData = await res.json().catch(() => ({}));
+            const errorMsg = errorData.error?.message || `HTTP ${res.status}`;
+            showToast(`✗ Lỗi: ${errorMsg}`);
         }
     } catch(e) {
         showToast('✗ Lỗi kết nối: ' + e.message);
